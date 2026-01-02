@@ -404,33 +404,29 @@
     <Content Include="Everything64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="ffmpeg.dll" />
-    <Content Include="ffmpeg.exe">
+    <Content Include="FFmpeg\bin\x64\avcodec-61.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="FFmpeg\bin\x64\avcodec-61.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="FFmpeg\bin\x64\avdevice-61.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\avfilter-10.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\avformat-61.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\avutil-59.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\postproc-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\swresample-5.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\bin\x64\swscale-8.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FFmpeg\include\libavcodec\ac3_parser.h" />
     <Content Include="FFmpeg\include\libavcodec\adts_parser.h" />
@@ -580,6 +576,9 @@
     <None Include="Resources\314969430_459991629596689_2789618268954753540_n.jpg" />
     <None Include="Resources\Image1.png" />
     <None Include="Resources\21cee4c1733fb2b1aa3bc74df69f9c05.jpg" />
+    <Content Include="shell32.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="腦.ico" />
   </ItemGroup>
   <ItemGroup>

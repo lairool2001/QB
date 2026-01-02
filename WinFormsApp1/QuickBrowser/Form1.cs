@@ -1,9 +1,7 @@
 ﻿using Amib.Threading;
-using AXVLC;
 using EverythingSharp.Enums;
 using EverythingSharp.Fluent;
 using LibVLCSharp.Shared;
-using LibVLCSharp.WinForms;
 using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Concurrent;
@@ -12,10 +10,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 using System.Text;
@@ -24,7 +20,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TsudaKageyu;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Action = Amib.Threading.Action;
 using BorderStyle = System.Windows.Forms.BorderStyle;
 using Exception = System.Exception;
@@ -593,7 +588,6 @@ namespace QuickBrowser
 
         private const string computerPath = "";
         bool lockGo = false;
-        private string selectName2;
         public void go(string nowPath, bool clearFilter = true, bool recordHistory = true, bool goSelect = true)
         {
             if (lockGo)
@@ -602,8 +596,6 @@ namespace QuickBrowser
             }
             //global = false;
             //textToImage.Clear();
-
-            selectName = Path.GetFileName(nowPath);
 
             smartThreadPool.Cancel(true);
             smartThreadPool2.Cancel(true);
@@ -623,37 +615,34 @@ namespace QuickBrowser
                 bool isDisk = nowPath == computerPath;
                 if (isFile)
                 {
+                    this.nowPath = Path.GetDirectoryName(nowPath);
                     ext = Path.GetExtension(nowPath);
-                    if (File.Exists(nowPath))
-                    {
-                        this.nowPath = nowPath = Path.GetDirectoryName(nowPath);
-                        Invoke(new Action(() =>
-                        {
-                            richTextBox1.Text = this.nowPath;
-                        }));
-                    }
                     bool isImage = imageFormat.Contains(ext);
                     if (isImage)
                     {
-                        FormMain.lastForm = this;
-                        callMain(() =>
-                        {
-                            drawing = true;
-                            vlcControl1.Visible = false;
-                            _mediaPlayer.Stop();
-                            pictureBox2.Image = LoadImagePure(noneProcessPath);
-                            pictureBox2.Show();
-                            TopMost = true;
-                            SetForegroundWindow(Handle.ToInt32());
-                            resetPictureBox2();
-                            TopMost = false;
-                        });
+                        callMain(async () =>
+                         {
+                             drawing = true;
+                             vlcControl1.Visible = false;
+                             _mediaPlayer.Stop();
+                             pictureBox2.Image = LoadImagePure(noneProcessPath);
+                             pictureBox2.Show();
+                             TopMost = true;
+                             SetForegroundWindow(Handle.ToInt32());
+                             resetPictureBox2();
+                             TopMost = false;
+                             richTextBox1.Text = this.nowPath;
+                             FormMain.lastForm = this;
+                             setToDraw();
+                             await Task.Delay(100);
+                             FormMain.lastForm.selectName = Path.GetFileName(nowPath);
+                             triggerNoSelectGoTo = false;
+                         });
                     }
                     bool isVideo = videoFormat.Contains(ext);
                     if (isVideo)
                     {
-                        FormMain.lastForm = this;
-                        callMain(() =>
+                        callMain(async () =>
                         {
                             drawing = false;
                             playAndOpenVideo(noneProcessPath);
@@ -661,6 +650,11 @@ namespace QuickBrowser
                             TopMost = true;
                             SetForegroundWindow(Handle.ToInt32());
                             TopMost = false;
+                            FormMain.lastForm = this;
+                            setToDraw();
+                            await Task.Delay(100);
+                            FormMain.lastForm.selectName = Path.GetFileName(nowPath);
+                            triggerNoSelectGoTo = false;
                         });
                     }
                 }
@@ -1733,7 +1727,8 @@ namespace QuickBrowser
                     if (b == null)
                     {
                         b = IconFunction.GetFileImageFromPath(f, IconFunction.IconSizeEnum.ExtraLargeIcon, true);
-                        b = CaptureNonTransparent(b);
+                        if (b != null)
+                            b = CaptureNonTransparent(b);
                     }
                     if (b == null)
                     {
@@ -4325,7 +4320,7 @@ namespace QuickBrowser
             smartThreadPool.Cancel();
             addJob(() =>
             {
-                string up = Path.GetFileName(nowPath);
+                string up = selectName;
                 cardList.Clear();
                 smartThreadPool2.Cancel();
                 smartThreadPool3.Cancel();
