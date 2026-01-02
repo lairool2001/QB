@@ -70,7 +70,6 @@ namespace QuickBrowser
             this.button17 = new System.Windows.Forms.Button();
             this.vlcControl1 = new LibVLCSharp.WinForms.VideoView();
             this.trackBar2 = new System.Windows.Forms.TrackBar();
-            this.timer4 = new System.Windows.Forms.Timer(this.components);
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.button22 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
@@ -79,7 +78,6 @@ namespace QuickBrowser
             this.button19 = new System.Windows.Forms.Button();
             this.button18 = new System.Windows.Forms.Button();
             this.timer5 = new System.Windows.Forms.Timer(this.components);
-            this.timer6 = new System.Windows.Forms.Timer(this.components);
             this.richTextBox1 = new QuickBrowser.AlphaRichTextBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -584,6 +582,7 @@ namespace QuickBrowser
             this.vlcControl1.TabIndex = 41;
             this.vlcControl1.Text = "vlcControl1";
             this.vlcControl1.Visible = false;
+            this.vlcControl1.VisibleChanged += new System.EventHandler(this.vlcControl1_VisibleChanged);
             this.vlcControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.vlcControl1_MouseDown_1);
             // 
             // trackBar2
@@ -598,11 +597,6 @@ namespace QuickBrowser
             this.trackBar2.Scroll += new System.EventHandler(this.trackBar2_Scroll);
             this.trackBar2.MouseDown += new System.Windows.Forms.MouseEventHandler(this.trackBar2_MouseDown);
             this.trackBar2.MouseUp += new System.Windows.Forms.MouseEventHandler(this.trackBar2_MouseUp);
-            // 
-            // timer4
-            // 
-            this.timer4.Enabled = true;
-            this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
             // groupBox1
             // 
@@ -685,11 +679,6 @@ namespace QuickBrowser
             // timer5
             // 
             this.timer5.Tick += new System.EventHandler(this.timer5_Tick);
-            // 
-            // timer6
-            // 
-            this.timer6.Enabled = true;
-            this.timer6.Tick += new System.EventHandler(this.timer6_Tick);
             // 
             // richTextBox1
             // 
@@ -774,6 +763,7 @@ namespace QuickBrowser
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
             this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Form1_KeyPress);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDown_1);
+            this.MouseEnter += new System.EventHandler(this.Form1_MouseEnter);
             this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseMove);
             this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseUp);
             this.Resize += new System.EventHandler(this.Form1_Resize);
@@ -832,7 +822,6 @@ namespace QuickBrowser
         private System.Windows.Forms.Button button17;
         private LibVLCSharp.WinForms.VideoView vlcControl1;
         private System.Windows.Forms.TrackBar trackBar2;
-        private System.Windows.Forms.Timer timer4;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.Button button19;
@@ -841,7 +830,6 @@ namespace QuickBrowser
         private System.Windows.Forms.Button button21;
         private System.Windows.Forms.Button button22;
         private System.Windows.Forms.Timer timer5;
-        private System.Windows.Forms.Timer timer6;
     }
 }
 

@@ -2158,6 +2158,8 @@ namespace QuickBrowser
         static Random random = new Random();
         ConcurrentDictionary<Image, int> imageTimer = new ConcurrentDictionary<Image, int>();
         volatile int timer = 0;
+        static Font font;
+        static Font font2;
         void insideDraw()
         {
             if (resetingGraphic)
@@ -2174,8 +2176,12 @@ namespace QuickBrowser
             double scaleRec = 1;
             Color clearColor = Color.Empty;
             Pen selectBoxPen = new Pen(Color.White, 4);
-
-            g.Clear(clearColor);
+            if (font == null || font2 == null)
+            {
+                font = new Font(Font.FontFamily, Math.Max(10, (Font.Size + 10) * scale));
+                font2 = new Font(Font.FontFamily, Math.Max(10, (Font.Size) * scale));
+            }
+            //g.Clear(clearColor);
             drawBackground(g);
             if (loadingDraw || waitAllDrawOK)
             {
@@ -2336,8 +2342,6 @@ namespace QuickBrowser
                 //r2.Height = 50;
                 r2.X = r.X;
                 r2.Y = r.Y;
-                Font font = new Font(Font.FontFamily, Math.Max(10, (Font.Size + 10) * scale));
-                Font font2 = new Font(Font.FontFamily, Math.Max(10, (Font.Size) * scale));
                 RectangleF r4 = r;
                 r4.Inflate(-5f, -5f);
                 if (gotoIndex != -1 || !string.IsNullOrEmpty(selectName))
@@ -2653,7 +2657,8 @@ namespace QuickBrowser
         private bool exit = false;
         private Action refresh;
 
-        bool pausing => (WindowState == FormWindowState.Minimized || !Visible) && !exit;
+        bool focusing;
+        bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
         private bool going = false;
         void drawingThread()
         {
@@ -2667,7 +2672,7 @@ namespace QuickBrowser
                 {
                     insideDraw();
                     var ia = drawPanel.BeginInvoke(refresh);
-                    Thread.Sleep(1);
+                    Thread.Sleep(10);
                     drawPanel.EndInvoke(ia);
                 }
                 catch (Exception ex)
@@ -4393,9 +4398,30 @@ namespace QuickBrowser
         {
             if (targetPath != old6)
             {
-                richTextBox6.Text = targetPath;
+                callMain(() =>
+                {
+                    richTextBox6.Text = targetPath;
+                    old6 = targetPath;
+                });
             }
-            old6 = targetPath;
+
+            if (MouseButtons != MouseButtons.Left)
+            {
+                Point screenCoordinates = Cursor.Position;
+                Point clientCoordinates = this.PointToClient(screenCoordinates);
+                groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
+            }
+
+
+            if (!vlcControl1.Visible || first) { }
+            else if (MouseButtons == MouseButtons.Middle)
+            {
+                timer5.Stop();
+                vlcControl1.Visible = false;
+                _mediaPlayer.Stop();
+                first = true;
+                hideViewersAndShowNormalControls();
+            }
         }
 
         private void button3_MouseDown(object sender, MouseEventArgs e)
@@ -5392,59 +5418,7 @@ namespace QuickBrowser
 
         private void timer4_Tick(object sender, EventArgs e)
         {
-            if (MouseButtons == MouseButtons.Left) { return; }
-            Point screenCoordinates = Cursor.Position;
-            Point clientCoordinates = this.PointToClient(screenCoordinates);
-            if (vlcControl1.Visible)
-            {
-                int newMax = (int)_mediaPlayer.Media.Duration;
-                int newValue = (int)Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration);
-                trackBar2.Maximum = newMax;
-                trackBar2.Minimum = 0;
-                int v = 0;
-                if (newValue <= newMax && (_mediaPlayer.IsPlaying || (_mediaPlayer.State == VLCState.Paused && reverse)))
-                {
-                    if (reverse)
-                    {
-                        v = (int)progress;
-                    }
-                    else
-                    {
-                        v = (int)(Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration));
-                    }
-                    if (v > newMax)
-                    {
-                        v = newMax;
-                    }
-                    if (v < trackBar2.Minimum)
-                    {
-                        v = trackBar2.Minimum;
-                    }
-                    trackBar2.Value = v;
-                }
-                if (_mediaPlayer.State == VLCState.Ended || (reverse && progress <= 0))
-                {
-                    trackBar2.Value = newMax;
-                    if (checkBox1.Checked)
-                    {
-                        if (reverse)
-                        {
-                            _mediaPlayer.Stop();
-                            progress = _mediaPlayer.Time = _mediaPlayer.Media.Duration;
-                            _mediaPlayer.Play();
-                            trackBar2.Value = (int)_mediaPlayer.Media.Duration;
-                        }
-                        else
-                        {
-                            _mediaPlayer.Stop();
-                            _mediaPlayer.Time = 0;
-                            _mediaPlayer.Play();
-                            trackBar2.Value = 0;
-                        }
-                    }
-                }
-            }
-            groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
+
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e)
@@ -5532,15 +5506,89 @@ namespace QuickBrowser
 
         private void timer6_Tick(object sender, EventArgs e)
         {
-            if (!vlcControl1.Visible || first) return;
-            if (MouseButtons == MouseButtons.Middle)
+        }
+
+        private void vlcControl1_VisibleChanged(object sender, EventArgs e)
+        {
+            if (vlcControl1.Visible && _mediaPlayer.Media != null)
             {
-                timer5.Stop();
-                vlcControl1.Visible = false;
-                _mediaPlayer.Stop();
-                first = true;
-                hideViewersAndShowNormalControls();
+                int newMax = (int)_mediaPlayer.Media.Duration;
+                int newValue = (int)Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration);
+                trackBar2.Maximum = newMax;
+                trackBar2.Minimum = 0;
+                int v = 0;
+                if (newValue <= newMax && (_mediaPlayer.IsPlaying || (_mediaPlayer.State == VLCState.Paused && reverse)))
+                {
+                    if (reverse)
+                    {
+                        v = (int)progress;
+                    }
+                    else
+                    {
+                        v = (int)(Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration));
+                    }
+                    if (v > newMax)
+                    {
+                        v = newMax;
+                    }
+                    if (v < trackBar2.Minimum)
+                    {
+                        v = trackBar2.Minimum;
+                    }
+                    trackBar2.Value = v;
+                }
+                if (_mediaPlayer.State == VLCState.Ended || (reverse && progress <= 0))
+                {
+                    trackBar2.Value = newMax;
+                    if (checkBox1.Checked)
+                    {
+                        if (reverse)
+                        {
+                            _mediaPlayer.Stop();
+                            progress = _mediaPlayer.Time = _mediaPlayer.Media.Duration;
+                            _mediaPlayer.Play();
+                            trackBar2.Value = (int)_mediaPlayer.Media.Duration;
+                        }
+                        else
+                        {
+                            _mediaPlayer.Stop();
+                            _mediaPlayer.Time = 0;
+                            _mediaPlayer.Play();
+                            trackBar2.Value = 0;
+                        }
+                    }
+                }
             }
+        }
+
+        private void Form1_Activated(object sender, EventArgs e)
+        {
+            focusing = true;
+        }
+
+        private void Form1_Deactivate(object sender, EventArgs e)
+        {
+            focusing = false;
+        }
+
+        private void Form1_Enter(object sender, EventArgs e)
+        {
+            focusing = true;
+        }
+
+        private void Form1_Leave(object sender, EventArgs e)
+        {
+            focusing = false;
+        }
+
+        private void Form1_MouseEnter(object sender, EventArgs e)
+        {
+            focusing = true;
+        }
+
+        private void Form1_MouseLeave(object sender, EventArgs e)
+        {
+            focusing = false;
         }
 
         int bitmapWidth, bitmapHeight;
