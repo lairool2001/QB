@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 using System.Text;
@@ -1875,13 +1876,19 @@ namespace QuickBrowser
         {
             vlcControl1.Visible = true;
             _mediaPlayer.Stop();
-            _mediaPlayer.Play(new Media(_libVLC, new Uri(path)));
+            var media = new Media(_libVLC, new Uri(path));
+            _mediaPlayer.Play(media);
             _mediaPlayer.Time = 0;
             progress = 0;
             Task.Delay(500).ContinueWith(t =>
             {
                 callMain(() =>
                 {
+                    trackBar2.SmallChange = 1;
+                    int newMax = (int)_mediaPlayer.Media.Duration;
+                    int newValue = (int)Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration);
+                    trackBar2.Maximum = newMax;
+                    trackBar2.Minimum = 0;
                     first = false;
                 });
             });
@@ -4396,31 +4403,51 @@ namespace QuickBrowser
         string old6 = "";
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if (targetPath != old6)
+            if (!pause)
             {
-                callMain(() =>
+                if (targetPath != old6)
                 {
-                    richTextBox6.Text = targetPath;
-                    old6 = targetPath;
-                });
+                    callMain(() =>
+                    {
+                        richTextBox6.Text = targetPath;
+                        old6 = targetPath;
+                    });
+                }
+
+                if (MouseButtons != MouseButtons.Left)
+                {
+                    Point screenCoordinates = Cursor.Position;
+                    Point clientCoordinates = this.PointToClient(screenCoordinates);
+                    groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
+                }
+
+                if (!vlcControl1.Visible || first) { }
+                else if (MouseButtons == MouseButtons.Middle)
+                {
+                    timer5.Stop();
+                    vlcControl1.Visible = false;
+                    _mediaPlayer.Stop();
+                    first = true;
+                    hideViewersAndShowNormalControls();
+                }
             }
 
-            if (MouseButtons != MouseButtons.Left)
+
+            if (_mediaPlayer != null && _mediaPlayer.Time > 0)
             {
-                Point screenCoordinates = Cursor.Position;
-                Point clientCoordinates = this.PointToClient(screenCoordinates);
-                groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
+                trackBar2.Minimum = 0;
+                trackBar2.Maximum = (int)_mediaPlayer.Media.Duration;
+                int time = (int)Math.Min(_mediaPlayer.Time, trackBar2.Maximum);
+                trackBar2.Value = time;
             }
 
-
-            if (!vlcControl1.Visible || first) { }
-            else if (MouseButtons == MouseButtons.Middle)
+            if (checkBox1.Checked)
             {
-                timer5.Stop();
-                vlcControl1.Visible = false;
-                _mediaPlayer.Stop();
-                first = true;
-                hideViewersAndShowNormalControls();
+                if (_mediaPlayer.Time >= _mediaPlayer.Media.Duration*0.95f && !reverse)
+                {
+                    _mediaPlayer.Time = 0;
+                    _mediaPlayer.Play();
+                }
             }
         }
 
@@ -4451,13 +4478,15 @@ namespace QuickBrowser
         private static void copyFilesRecursively(string sourcePath, string targetPath)
         {
             //Now Create all of the directories
-            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", System.IO.SearchOption.AllDirectories))
+            var dirz = Directory.GetDirectories(sourcePath, "*", System.IO.SearchOption.AllDirectories);
+            foreach (string dirPath in dirz)
             {
                 Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
             }
 
             //Copy all the files & Replaces any files with the same name
-            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories))
+            var filez = Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories);
+            foreach (string newPath in filez)
             {
                 File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
             }
@@ -5206,15 +5235,6 @@ namespace QuickBrowser
 
         private void timer3_Tick(object sender, EventArgs e)
         {
-            if (selectCard == null)
-            {
-                selectCard = cardList[0];
-            }
-            if (changeImageIndex(-1))
-            {
-                selectCard = cardList[0];
-                //changeImageIndex(-1);
-            }
         }
 
         private void button14_Click(object sender, EventArgs e)
@@ -5381,20 +5401,17 @@ namespace QuickBrowser
             // 計算滑桿可用寬度（扣掉左右邊界）
             int trackWidth = tb.ClientSize.Width - 20;
 
+            int x = e == null ? 0 : e.X;
             // 將滑鼠點擊位置轉換成比例
-            double ratio = (double)(e.X - 10) / trackWidth;
+            double ratio = (double)x / trackWidth;
 
             // 計算對應的 Value
             int newValue = tb.Minimum + (int)(ratio * (tb.Maximum - tb.Minimum));
 
             // 設定 Value
-            tb.Value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, newValue));
-        }
+            _mediaPlayer.Time = tb.Value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, newValue));
 
-        // 2. 滑鼠移動時：更新時間軸
-        private void trackBar2_Scroll(object sender, EventArgs e)
-        {
-            timer4_Tick(sender, null);
+            pause = true;
         }
         bool pause;
         // 3. 滑鼠放開時：繼續播放
@@ -5405,20 +5422,14 @@ namespace QuickBrowser
             {
                 if (vlcControl1.Visible && _mediaPlayer != null)
                 {
-                    if (!pause)
-                    {
-                        _mediaPlayer.Stop();
-                        _mediaPlayer.Time = 0;
-                        _mediaPlayer.Play();
-                    }
+                    _mediaPlayer.Stop();
                     progress = _mediaPlayer.Time = trackBar2.Value;
+                    _mediaPlayer.Play();
+                    progress = _mediaPlayer.Time = trackBar2.Value;
+
+                    pause = false;
                 }
             }
-        }
-
-        private void timer4_Tick(object sender, EventArgs e)
-        {
-
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e)
@@ -5430,6 +5441,7 @@ namespace QuickBrowser
             _mediaPlayer.Stop();
             _mediaPlayer.Time = 0;
             _mediaPlayer.Play();
+            pause = false;
         }
 
         private void button19_Click(object sender, EventArgs e)
@@ -5449,7 +5461,7 @@ namespace QuickBrowser
             pause = false;
         }
 
-        bool reverse;
+        bool reverse = false;
         private void button22_Click(object sender, EventArgs e)
         {
             reverse = !reverse;
@@ -5463,9 +5475,15 @@ namespace QuickBrowser
             else
             {
                 _mediaPlayer.SetPause(true);
-                progress = _mediaPlayer.Time;
                 _mediaPlayer.Play();
             }
+            progress = _mediaPlayer.Time;
+            trackBar2.Value = (int)progress;
+
+            callMain(() =>
+            {
+                trackBar2_MouseDown(sender, null);
+            });
         }
         long progress = 0;
         bool first = true;
@@ -5478,12 +5496,6 @@ namespace QuickBrowser
             _mediaPlayer.Play();
             _mediaPlayer.SetPause(true);
             groupBox1.Refresh();
-
-            if (_mediaPlayer.Time >= 0 && _mediaPlayer.Time < _mediaPlayer.Media.Duration)
-            {
-                trackBar2.Value = (int)_mediaPlayer.Time;
-
-            }
         }
 
         private void Form1_MouseDown_1(object sender, MouseEventArgs e)
@@ -5589,6 +5601,11 @@ namespace QuickBrowser
         private void Form1_MouseLeave(object sender, EventArgs e)
         {
             focusing = false;
+        }
+
+        private void trackBar2_ValueChanged(object sender, EventArgs e)
+        {
+
         }
 
         int bitmapWidth, bitmapHeight;

@@ -59,7 +59,6 @@ namespace QuickBrowser
             this.button12 = new System.Windows.Forms.Button();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
-            this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.button13 = new System.Windows.Forms.Button();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.timer3 = new System.Windows.Forms.Timer(this.components);
@@ -323,6 +322,7 @@ namespace QuickBrowser
             // timer1
             // 
             this.timer1.Enabled = true;
+            this.timer1.Interval = 10;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // richTextBox7
@@ -470,10 +470,6 @@ namespace QuickBrowser
             this.trackBar1.Visible = false;
             this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
             // 
-            // timer2
-            // 
-            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
-            // 
             // button13
             // 
             this.button13.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -594,7 +590,7 @@ namespace QuickBrowser
             this.trackBar2.Name = "trackBar2";
             this.trackBar2.Size = new System.Drawing.Size(656, 45);
             this.trackBar2.TabIndex = 42;
-            this.trackBar2.Scroll += new System.EventHandler(this.trackBar2_Scroll);
+            this.trackBar2.ValueChanged += new System.EventHandler(this.trackBar2_ValueChanged);
             this.trackBar2.MouseDown += new System.Windows.Forms.MouseEventHandler(this.trackBar2_MouseDown);
             this.trackBar2.MouseUp += new System.Windows.Forms.MouseEventHandler(this.trackBar2_MouseUp);
             // 
@@ -810,7 +806,6 @@ namespace QuickBrowser
         private System.Windows.Forms.Button button12;
         private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.TrackBar trackBar1;
-        private System.Windows.Forms.Timer timer2;
         private System.Windows.Forms.Button button13;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.Timer timer3;
