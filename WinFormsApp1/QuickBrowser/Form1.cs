@@ -635,9 +635,11 @@ namespace QuickBrowser
                              richTextBox1.Text = this.nowPath;
                              FormMain.lastForm = this;
                              setToDraw();
-                             await Task.Delay(100);
-                             FormMain.lastForm.selectName = Path.GetFileName(nowPath);
-                             triggerNoSelectGoTo = false;
+                             Task.Delay(1).ContinueWith(_mediaPlayer =>
+                             {
+                                 FormMain.lastForm.selectName = Path.GetFileName(nowPath);
+                                 triggerNoSelectGoTo = false;
+                             });
                          });
                     }
                     bool isVideo = videoFormat.Contains(ext);
@@ -653,9 +655,11 @@ namespace QuickBrowser
                             TopMost = false;
                             FormMain.lastForm = this;
                             setToDraw();
-                            await Task.Delay(100);
-                            FormMain.lastForm.selectName = Path.GetFileName(nowPath);
-                            triggerNoSelectGoTo = false;
+                            Task.Delay(1).ContinueWith(_mediaPlayer =>
+                            {
+                                FormMain.lastForm.selectName = Path.GetFileName(nowPath);
+                                triggerNoSelectGoTo = false;
+                            });
                         });
                     }
                 }
@@ -1874,6 +1878,7 @@ namespace QuickBrowser
 
         private void playAndOpenVideo(string path)
         {
+            pause = false;
             vlcControl1.Visible = true;
             _mediaPlayer.Stop();
             var media = new Media(_libVLC, new Uri(path));
@@ -4403,7 +4408,7 @@ namespace QuickBrowser
         string old6 = "";
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if (!pause)
+            if (!pause || (pause && timer5.Enabled))
             {
                 if (targetPath != old6)
                 {
@@ -4443,11 +4448,28 @@ namespace QuickBrowser
 
             if (checkBox1.Checked)
             {
-                if (_mediaPlayer.Time >= _mediaPlayer.Media.Duration*0.95f && !reverse)
+                if (reverse)
                 {
-                    _mediaPlayer.Time = 0;
-                    _mediaPlayer.Play();
+                    if (_mediaPlayer.Time < 0 && !pause)
+                    {
+                        _mediaPlayer.Time = _mediaPlayer.Media.Duration;
+                        progress = (int)_mediaPlayer.Media.Duration;
+                        _mediaPlayer.Pause();
+                        timer5.Enabled = reverse;
+                    }
                 }
+                else
+                {
+                    if (_mediaPlayer.Time >= _mediaPlayer.Media.Duration * 0.95f && _mediaPlayer.IsPlaying)
+                    {
+                        _mediaPlayer.Time = 0;
+                        _mediaPlayer.Play();
+                    }
+                }
+            }
+            else
+            {
+
             }
         }
 
@@ -5391,7 +5413,7 @@ namespace QuickBrowser
             // 取得 TrackBar 控制項
             var tb = trackBar2;
 
-            if (_mediaPlayer.State == VLCState.Playing || reverse)
+            if (_mediaPlayer.State == VLCState.Playing)
             {
                 _mediaPlayer.Stop();
                 _mediaPlayer.Play();
@@ -5399,7 +5421,7 @@ namespace QuickBrowser
             }
 
             // 計算滑桿可用寬度（扣掉左右邊界）
-            int trackWidth = tb.ClientSize.Width - 20;
+            int trackWidth = tb.ClientSize.Width;
 
             int x = e == null ? 0 : e.X;
             // 將滑鼠點擊位置轉換成比例
@@ -5409,7 +5431,8 @@ namespace QuickBrowser
             int newValue = tb.Minimum + (int)(ratio * (tb.Maximum - tb.Minimum));
 
             // 設定 Value
-            _mediaPlayer.Time = tb.Value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, newValue));
+            _mediaPlayer.Time = tb.Value = progress = Math.Max(tb.Minimum, Math.Min(tb.Maximum, newValue));
+
 
             pause = true;
         }
@@ -5417,19 +5440,7 @@ namespace QuickBrowser
         // 3. 滑鼠放開時：繼續播放
         private void trackBar2_MouseUp(object sender, MouseEventArgs e)
         {
-            // 檢查是否是左鍵放開
-            if (e.Button == MouseButtons.Left)
-            {
-                if (vlcControl1.Visible && _mediaPlayer != null)
-                {
-                    _mediaPlayer.Stop();
-                    progress = _mediaPlayer.Time = trackBar2.Value;
-                    _mediaPlayer.Play();
-                    progress = _mediaPlayer.Time = trackBar2.Value;
-
-                    pause = false;
-                }
-            }
+            trackBar2_MouseDown(sender, e);
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e)
@@ -5438,27 +5449,34 @@ namespace QuickBrowser
 
         private void button18_Click(object sender, EventArgs e)
         {
+            trackBar2.Value = 0;
+            progress = 0;
             _mediaPlayer.Stop();
-            _mediaPlayer.Time = 0;
             _mediaPlayer.Play();
-            pause = false;
+            _mediaPlayer.SeekTo(TimeSpan.Zero);
+            button20.Enabled = button21.Enabled = button22.Enabled = true;
         }
 
         private void button19_Click(object sender, EventArgs e)
         {
             _mediaPlayer.Stop();
+            pause = true;
+            timer5.Stop();
+            button20.Enabled = button21.Enabled = button22.Enabled = false;
         }
 
         private void button20_Click(object sender, EventArgs e)
         {
             _mediaPlayer.SetPause(true);
             pause = true;
+            timer5.Enabled = false;
         }
 
         private void button21_Click(object sender, EventArgs e)
         {
             _mediaPlayer.SetPause(false);
             pause = false;
+            timer5.Enabled = reverse;
         }
 
         bool reverse = false;
@@ -5466,32 +5484,38 @@ namespace QuickBrowser
         {
             reverse = !reverse;
             timer5.Enabled = reverse;
-            if (reverse)
-            {
-                progress = _mediaPlayer.Time;
-                _mediaPlayer.Play();
-                _mediaPlayer.SetPause(true);
-            }
-            else
-            {
-                _mediaPlayer.SetPause(true);
-                _mediaPlayer.Play();
-            }
-            progress = _mediaPlayer.Time;
-            trackBar2.Value = (int)progress;
+            progress = (int)_mediaPlayer.Time;
+            _mediaPlayer.SetPause(true);
+            _mediaPlayer.Play();
 
             callMain(() =>
             {
+                if (progress >= _mediaPlayer.Media.Duration)
+                {
+                    progress = (int)_mediaPlayer.Media.Duration;
+                }
+                _mediaPlayer.Time = progress;
+                int time = trackBar2.Value = (int)progress;
                 trackBar2_MouseDown(sender, null);
+                progress = trackBar2.Value = time;
+                _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(time));
             });
         }
-        long progress = 0;
+        volatile int progress;
         bool first = true;
         private void timer5_Tick(object sender, EventArgs e)
         {
             if (MouseButtons == MouseButtons.Left) return;
-            _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(progress));
+            if (progress < 0 && checkBox1.Checked)
+            {
+                progress = (int)_mediaPlayer.Media.Duration;
+            }
             progress -= 100;
+            if (progress < 0)
+            {
+                progress = -1;
+            }
+            _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(progress));
             _mediaPlayer.SetPause(false);
             _mediaPlayer.Play();
             _mediaPlayer.SetPause(true);
@@ -5557,8 +5581,10 @@ namespace QuickBrowser
                         if (reverse)
                         {
                             _mediaPlayer.Stop();
-                            progress = _mediaPlayer.Time = _mediaPlayer.Media.Duration;
+                            progress = (int)_mediaPlayer.Media.Duration;
+                            progress = (int)_mediaPlayer.Time;
                             _mediaPlayer.Play();
+                            _mediaPlayer.SetPause(true);
                             trackBar2.Value = (int)_mediaPlayer.Media.Duration;
                         }
                         else
@@ -5604,6 +5630,11 @@ namespace QuickBrowser
         }
 
         private void trackBar2_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void trackBar2_Scroll(object sender, EventArgs e)
         {
 
         }
