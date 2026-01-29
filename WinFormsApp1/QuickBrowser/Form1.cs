@@ -1187,7 +1187,7 @@ namespace QuickBrowser
         }
         //BMP, GIF, EXIF, JPG, PNG and TIFF
         readonly HashSet<string> imageFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".gif", ".exif", ".jpg", ".jpeg", ".png", ".tiff", ".jfif" };
-        readonly HashSet<string> videoFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mp4", ".wmv", ".webm", ".mov", ".avi", ".mkv", ".ts" };
+        readonly HashSet<string> videoFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mp4", ".wmv", ".webm", ".mov", ".avi", ".mkv", ".ts", ".mp3", ".wav", ".ogg" };
         readonly HashSet<string> textFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".ini", ".cs", ".xml", ".php", ".log", ".bat", ".ps1" };
         volatile bool loadAllCard = false;
         bool loadCacheFileSystem = true, loadCacheCardList = false;
