@@ -5492,7 +5492,7 @@ namespace QuickBrowser
             {
                 if (progress >= _mediaPlayer.Media.Duration)
                 {
-                    progress = (int)_mediaPlayer.Media.Duration;
+                    progress = 0;
                 }
                 _mediaPlayer.Time = progress;
                 int time = trackBar2.Value = (int)progress;
