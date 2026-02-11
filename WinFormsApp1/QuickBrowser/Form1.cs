@@ -5526,9 +5526,9 @@ namespace QuickBrowser
         {
         }
 
-        private void vlcControl1_MouseDown_1(object sender, MouseEventArgs e)
+        private void vlcControl1_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Middle && e.Clicks == 2)
+            if (e.Button == MouseButtons.Middle)
             {
                 vlcControl1.Visible = false;
                 _mediaPlayer.Stop();

@@ -654,7 +654,7 @@ namespace QuickBrowser
             this.vlcControl1.Text = "vlcControl1";
             this.vlcControl1.Visible = false;
             this.vlcControl1.VisibleChanged += new System.EventHandler(this.vlcControl1_VisibleChanged);
-            this.vlcControl1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.vlcControl1_MouseDown_1);
+            this.vlcControl1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.vlcControl1_MouseUp);
             // 
             // groupBox1
             // 
