@@ -4427,14 +4427,6 @@ namespace QuickBrowser
                 }
 
                 if (!vlcControl1.Visible || first) { }
-                else if (MouseButtons == MouseButtons.Middle)
-                {
-                    timer5.Stop();
-                    vlcControl1.Visible = false;
-                    _mediaPlayer.Stop();
-                    first = true;
-                    hideViewersAndShowNormalControls();
-                }
             }
 
 
@@ -4470,6 +4462,14 @@ namespace QuickBrowser
             else
             {
 
+            }
+            if (MouseButtons == MouseButtons.Middle && _mediaPlayer.Time > 0)
+            {
+                timer5.Stop();
+                vlcControl1.Visible = false;
+                _mediaPlayer.Stop();
+                first = true;
+                hideViewersAndShowNormalControls();
             }
         }
 
