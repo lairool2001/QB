@@ -1885,6 +1885,7 @@ namespace QuickBrowser
             _mediaPlayer.Play(media);
             _mediaPlayer.Time = 0;
             progress = 0;
+            timer1.Start();
             Task.Delay(500).ContinueWith(t =>
             {
                 callMain(() =>
@@ -5530,8 +5531,10 @@ namespace QuickBrowser
         {
             if (e.Button == MouseButtons.Middle)
             {
+                timer1.Stop();
                 vlcControl1.Visible = false;
                 _mediaPlayer.Stop();
+                groupBox1.Visible = false;
             }
         }
 
