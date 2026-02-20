@@ -454,7 +454,7 @@ namespace QuickBrowser
             this.button18.Name = "button18";
             this.button18.Size = new System.Drawing.Size(75, 23);
             this.button18.TabIndex = 43;
-            this.button18.Text = "到開頭";
+            this.button18.Text = "播放";
             this.button18.UseVisualStyleBackColor = true;
             this.button18.Click += new System.EventHandler(this.button18_Click);
             // 

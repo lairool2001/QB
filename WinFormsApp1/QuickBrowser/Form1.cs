@@ -1886,6 +1886,7 @@ namespace QuickBrowser
             _mediaPlayer.Time = 0;
             progress = 0;
             timer1.Start();
+            reverse = false;
             Task.Delay(500).ContinueWith(t =>
             {
                 callMain(() =>
@@ -4426,8 +4427,6 @@ namespace QuickBrowser
                     Point clientCoordinates = this.PointToClient(screenCoordinates);
                     groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
                 }
-
-                if (!vlcControl1.Visible || first) { }
             }
 
 
@@ -5450,11 +5449,8 @@ namespace QuickBrowser
 
         private void button18_Click(object sender, EventArgs e)
         {
-            trackBar2.Value = 0;
-            progress = 0;
-            _mediaPlayer.Stop();
+            pause = false;
             _mediaPlayer.Play();
-            _mediaPlayer.SeekTo(TimeSpan.Zero);
             button20.Enabled = button21.Enabled = button22.Enabled = true;
         }
 
@@ -5499,6 +5495,8 @@ namespace QuickBrowser
                 int time = trackBar2.Value = (int)progress;
                 trackBar2_MouseDown(sender, null);
                 progress = trackBar2.Value = time;
+                _mediaPlayer.Stop();
+                _mediaPlayer.Play();
                 _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(time));
             });
         }
@@ -5520,7 +5518,7 @@ namespace QuickBrowser
             _mediaPlayer.SetPause(false);
             _mediaPlayer.Play();
             _mediaPlayer.SetPause(true);
-            groupBox1.Refresh();
+            vlcControl1.Refresh();
         }
 
         private void Form1_MouseDown_1(object sender, MouseEventArgs e)
@@ -5685,8 +5683,8 @@ namespace QuickBrowser
         {
             //將Image轉換成流資料，並儲存為byte[]
             MemoryStream mstream = new MemoryStream();
-            image.Save(mstream, System.Drawing.Imaging.ImageFormat.Png);
-            byte[] byData = new Byte[mstream.Length];
+            image.Save(mstream, ImageFormat.Png);
+            byte[] byData = new byte[mstream.Length];
             mstream.Position = 0;
             mstream.Read(byData, 0, byData.Length);
             mstream.Close();
