@@ -533,6 +533,10 @@ namespace Amib.Threading
             if (count == 0)
             {
                 IsIdle = true;
+				if (_isIdleWaitHandle == null)
+				{
+					return;
+				}
                 _isIdleWaitHandle.Set();
             }
 
