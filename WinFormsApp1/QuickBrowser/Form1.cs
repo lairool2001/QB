@@ -314,14 +314,8 @@ namespace QuickBrowser
             [DllImport("kernel32.dll")]
             private static extern IntPtr GetModuleHandle(string lpModuleName);
 
-            static bool setup;
             public static void Start()
             {
-                if (setup)
-                {
-                    return;
-                }
-                setup = true;
                 _proc = HookCallback;
                 using (var process = System.Diagnostics.Process.GetCurrentProcess())
                 using (var module = process.MainModule)
@@ -421,8 +415,8 @@ namespace QuickBrowser
         }
         void stopVideo()
         {
-            vlcControl1.Visible = false;
             vlcControl1.MediaPlayer.Stop();
+            vlcControl1.Visible = false;
             timer5.Stop();
         }
 
@@ -455,15 +449,25 @@ namespace QuickBrowser
                 }
 
                 selectCard = cardList[i];
+                if (selectCard.isImage || selectCard.isVideo)
+                {
+                    if (pictureBox2.Image != null)
+                    {
+                        pictureBox2.Image.Dispose();
+                    }
+                    if (vlcControl1.Visible)
+                    {
+                        stopVideo();
+                    }
+                    selecteGoto = true;
+                    gotoIndex = selectCard.index;
+                    clearSelectedAndHandleUI();
+                }
                 if (selectCard.isImage)
                 {
-                    if (pictureBox2.Image != null) pictureBox2.Image.Dispose();
                     pictureBox2.Image = LoadImagePure(selectCard.fullPath);
                     resetPictureBox2();
                     pictureBox2.Refresh();
-                    clearSelectedAndHandleUI();
-                    selecteGoto = true;
-                    gotoIndex = selectCard.index;
                     setToDraw();
 
                     if (over)
@@ -474,14 +478,7 @@ namespace QuickBrowser
                 }
                 else if (selectCard.isVideo)
                 {
-                    if (vlcControl1.Visible)
-                    {
-                        stopVideo();
-                    }
                     playAndOpenVideo(selectCard.fullPath);
-                    clearSelectedAndHandleUI();
-                    selecteGoto = true;
-                    gotoIndex = selectCard.index;
                     setToDraw();
                     if (over)
                     {
