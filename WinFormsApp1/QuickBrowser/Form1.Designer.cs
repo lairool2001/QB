@@ -516,7 +516,6 @@ namespace QuickBrowser
             this.pictureBox1.MouseHover += new System.EventHandler(this.pictureBox1_MouseHover);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp_1);
-            this.pictureBox1.Resize += new System.EventHandler(this.pictureBox1_Resize);
             // 
             // pictureBox2
             // 

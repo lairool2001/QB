@@ -145,6 +145,21 @@ namespace QuickBrowser
             resetingGraphic = false;
             drawPanel.Refresh();
         }
+        public class MouseWheelFilter : IMessageFilter
+        {
+            const int WM_MOUSEWHEEL = 0x020A;
+            public event EventHandler<MouseEventArgs> MouseWheel;
+
+            public bool PreFilterMessage(ref Message m)
+            {
+                if (m.Msg == WM_MOUSEWHEEL)
+                {
+                    int delta = (short)((m.WParam.ToInt64() >> 16) & 0xFFFF);
+                    MouseWheel?.Invoke(this, new MouseEventArgs(MouseButtons.None, 0, 0, 0, delta));
+                }
+                return false;
+            }
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
             DoubleBuffered = true;
@@ -154,7 +169,7 @@ namespace QuickBrowser
                 {
                     while (pausing)
                     {
-                        Thread.Sleep(100);
+                        Thread.Sleep(10);
                     }
                     while (job1Queue.Count > 0)
                     {
@@ -243,7 +258,11 @@ namespace QuickBrowser
             pictureBox2.KeyDown += PictureBox2_KeyDown;
             label3.Text = "";
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
-            MouseWheel += mainMouseWheel;
+
+            GlobalMouseHook.Start();
+            GlobalMouseHook.MouseWheelScrolled += mainMouseWheel;
+
+
             setGoodBitmapAndResetGraphic();
             //g = pictureBox1.CreateGraphics();
 
@@ -272,6 +291,60 @@ namespace QuickBrowser
             loopPicture.Visible = false;
             loopPicture.TabStop = false;
         }
+        public class GlobalMouseHook
+        {
+            private const int WH_MOUSE_LL = 14;
+            private const int WM_MOUSEWHEEL = 0x020A;
+
+            private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+            private static LowLevelMouseProc _proc;
+            private static IntPtr _hookID = IntPtr.Zero;
+
+            public static event Action<int> MouseWheelScrolled;
+
+            [DllImport("user32.dll")]
+            private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+            [DllImport("user32.dll")]
+            private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+            [DllImport("user32.dll")]
+            private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+            [DllImport("kernel32.dll")]
+            private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+            static bool setup;
+            public static void Start()
+            {
+                if (setup)
+                {
+                    return;
+                }
+                setup = true;
+                _proc = HookCallback;
+                using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                using (var module = process.MainModule)
+                {
+                    _hookID = SetWindowsHookEx(WH_MOUSE_LL, _proc, GetModuleHandle(module.ModuleName), 0);
+                }
+            }
+
+            public static void Stop()
+            {
+                UnhookWindowsHookEx(_hookID);
+            }
+
+            private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+            {
+                if (nCode >= 0 && wParam == (IntPtr)WM_MOUSEWHEEL)
+                {
+                    int delta = (short)((Marshal.ReadInt32(lParam + 8) >> 16) & 0xFFFF);
+                    MouseWheelScrolled?.Invoke(delta);
+                }
+                return CallNextHookEx(_hookID, nCode, wParam, lParam);
+            }
+        }
 
         private void LoopPicture_OnExit()
         {
@@ -290,9 +363,10 @@ namespace QuickBrowser
                 return area > 50;
             }
         }
-        private void mainMouseWheel(object sender, MouseEventArgs e)
+        private void mainMouseWheel(int delta)
         {
-            if (pictureBox2.Visible)
+            if (!focusing) return;
+            if (pictureBox2.Visible || vlcControl1.Visible)
             {
                 if (MouseButtons == MouseButtons.Left)
                 {
@@ -301,24 +375,24 @@ namespace QuickBrowser
                 {
                     pictureBox2.Dock = DockStyle.None;
                     pictureBox2.Anchor = AnchorStyles.None;
-                    pictureBox2.Width += e.Delta;
-                    pictureBox2.Height += e.Delta;
+                    pictureBox2.Width += delta;
+                    pictureBox2.Height += delta;
                     pictureBox2.Left = Width / 2 - pictureBox2.Width / 2;
                     pictureBox2.Top = Height / 2 - pictureBox2.Height / 2;
-                    oldMousePosX = e.X;
-                    oldMousePosY = e.Y;
+                    oldMousePosX = MousePosition.X;
+                    oldMousePosY = MousePosition.Y;
                 }
                 else if (MouseButtons == MouseButtons.None)
                 {
                     if (selectCard == null) return;
 
-                    if (changeImageIndex(e.Delta)) return;
+                    if (changeImageIndex(delta)) return;
                 }
                 return;
             }
             if (MouseButtons == MouseButtons.Left && !selectRectangleMode)
             {
-                if (e.Delta > 0)
+                if (delta > 0)
                 {
                     back();
                 }
@@ -329,7 +403,7 @@ namespace QuickBrowser
             }
             else if (MouseButtons == MouseButtons.Right && !selectRectangleMode)
             {
-                if (e.Delta > 0)
+                if (delta > 0)
                 {
                     older();
                 }
@@ -340,10 +414,16 @@ namespace QuickBrowser
             }
             else if (MouseButtons == MouseButtons.None || selectRectangleMode)
             {
-                targetScrollY = scrollY + (picH + 50) * Math.Sign(e.Delta);
+                targetScrollY = scrollY + (picH + 50) * Math.Sign(delta);
             }
 
             setToDraw();
+        }
+        void stopVideo()
+        {
+            vlcControl1.Visible = false;
+            vlcControl1.MediaPlayer.Stop();
+            timer5.Stop();
         }
 
         private bool changeImageIndex(int delta)
@@ -392,6 +472,23 @@ namespace QuickBrowser
                     }
                     break;
                 }
+                else if (selectCard.isVideo)
+                {
+                    if (vlcControl1.Visible)
+                    {
+                        stopVideo();
+                    }
+                    playAndOpenVideo(selectCard.fullPath);
+                    clearSelectedAndHandleUI();
+                    selecteGoto = true;
+                    gotoIndex = selectCard.index;
+                    setToDraw();
+                    if (over)
+                    {
+                        return true;
+                    }
+                    break;
+                }
 
                 if (over)
                 {
@@ -423,7 +520,7 @@ namespace QuickBrowser
             {
                 while (pausing)
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(10);
                 }
                 if (stopScroll)
                 {
@@ -583,6 +680,7 @@ namespace QuickBrowser
             {
                 go(to);
             }
+            focusing = true;
         }
         [DllImport("User32.dll")]
         public static extern Int32 SetForegroundWindow(int hWnd);
@@ -624,8 +722,7 @@ namespace QuickBrowser
                         callMain(async () =>
                          {
                              drawing = true;
-                             vlcControl1.Visible = false;
-                             _mediaPlayer.Stop();
+                             stopVideo();
                              pictureBox2.Image = LoadImagePure(noneProcessPath);
                              pictureBox2.Show();
                              TopMost = true;
@@ -1879,15 +1976,16 @@ namespace QuickBrowser
         private void playAndOpenVideo(string path)
         {
             pause = false;
+            stopVideo();
             vlcControl1.Visible = true;
-            _mediaPlayer.Stop();
             var media = new Media(_libVLC, new Uri(path));
             _mediaPlayer.Play(media);
             _mediaPlayer.Time = 0;
             progress = 0;
             timer1.Start();
             reverse = false;
-            Task.Delay(500).ContinueWith(t =>
+            Focus();
+            Task.Delay(10).ContinueWith(t =>
             {
                 callMain(() =>
                 {
@@ -2200,7 +2298,7 @@ namespace QuickBrowser
             if (loadingDraw || waitAllDrawOK)
             {
                 timer++;
-                if (timer > 500)
+                if (timer > 100)
                 {
                     waitLoadingAnimation(g);
                 }
@@ -2671,7 +2769,7 @@ namespace QuickBrowser
         private bool exit = false;
         private Action refresh;
 
-        bool focusing;
+        public bool focusing;
         bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
         private bool going = false;
         void drawingThread()
@@ -3512,17 +3610,17 @@ namespace QuickBrowser
             {
                 return;
             }
+            GlobalMouseHook.Stop();
 
             history.Clear();
             histroyIndex = 0;
 
-            _mediaPlayer.Stop();
+            stopVideo();
             goButNotSame(qbSetting.home);
             closedForms.Add(this);
             e.Cancel = true;
             WindowState = FormWindowState.Normal;
             Hide();
-            //Top = 5000;
             if (FormMain.lastForm == this)
             {
                 FormMain.lastForm = null;
@@ -3547,6 +3645,7 @@ namespace QuickBrowser
             }
             form1.Top = 0;
             closedForms.Remove(form1);
+            form1.setToDraw();
             return form1;
         }
 
@@ -4077,14 +4176,6 @@ namespace QuickBrowser
             }
         }
 
-        private void pictureBox1_Resize(object sender, EventArgs e)
-        {
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-        }
-
         bool lockRichText3 = false;
         private void richTextBox3_TextChanged(object sender, EventArgs e)
         {
@@ -4427,6 +4518,7 @@ namespace QuickBrowser
                     Point clientCoordinates = this.PointToClient(screenCoordinates);
                     groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
                 }
+
             }
 
 
@@ -4466,8 +4558,7 @@ namespace QuickBrowser
             if (MouseButtons == MouseButtons.Middle && _mediaPlayer.Time > 0)
             {
                 timer5.Stop();
-                vlcControl1.Visible = false;
-                _mediaPlayer.Stop();
+                stopVideo();
                 first = true;
                 hideViewersAndShowNormalControls();
             }
@@ -5456,9 +5547,8 @@ namespace QuickBrowser
 
         private void button19_Click(object sender, EventArgs e)
         {
-            _mediaPlayer.Stop();
+            stopVideo();
             pause = true;
-            timer5.Stop();
             button20.Enabled = button21.Enabled = button22.Enabled = false;
         }
 

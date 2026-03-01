@@ -33,7 +33,6 @@ namespace QuickBrowser
         {
             InitializeComponent();
             Hide();
-
             smartThreadPool = new SmartThreadPool();
             smartThreadPool2 = new SmartThreadPool();
             smartThreadPoolFree = new SmartThreadPool();
@@ -91,6 +90,7 @@ namespace QuickBrowser
             form1.Top = 0;
             form1.Show();
             form1.goOrGlobalGo(path);
+            form1.Focus();
             return form1;
         }
 
@@ -145,7 +145,7 @@ namespace QuickBrowser
                         char[] chars = new char[size];
                         reader.ReadArray(i, chars, 0, chars.Length);
                         reader.Write(0, 0);
-                        Invoke(new Action(() =>
+                        Invoke(new Action(async () =>
                         {
                             string goPath = new string(chars);
                             if (string.IsNullOrEmpty(goPath))
@@ -154,7 +154,7 @@ namespace QuickBrowser
                             }
                             if (lastForm == null)
                             {
-                                lastForm=StartNewForm(goPath);
+                                lastForm = StartNewForm(goPath);
                             }
                             else
                             {
@@ -248,7 +248,7 @@ namespace QuickBrowser
 
             Form1.qbSetting = qbSetting;
 
-            if(string.IsNullOrEmpty(Program.path))
+            if (string.IsNullOrEmpty(Program.path))
             {
                 Program.path = qbSetting.home;
             }
