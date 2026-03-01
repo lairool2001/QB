@@ -750,6 +750,7 @@ namespace QuickBrowser
                             TopMost = true;
                             SetForegroundWindow(Handle.ToInt32());
                             TopMost = false;
+                            richTextBox1.Text = this.nowPath;
                             FormMain.lastForm = this;
                             setToDraw();
                             Task.Delay(1).ContinueWith(_mediaPlayer =>
