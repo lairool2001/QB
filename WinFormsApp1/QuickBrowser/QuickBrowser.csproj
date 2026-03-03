@@ -55,7 +55,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>filedircard2.ico</ApplicationIcon>
+    <ApplicationIcon>CyberpunkIcon %285%29.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -398,6 +398,11 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CyberpunkFileCard.ico" />
+    <Content Include="CyberpunkIcon %281%29.ico" />
+    <Content Include="CyberpunkIcon %283%29.ico" />
+    <Content Include="CyberpunkIcon %284%29.ico" />
+    <Content Include="CyberpunkIcon %285%29.ico" />
     <Content Include="d2dlib64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
