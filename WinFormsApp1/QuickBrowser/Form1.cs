@@ -163,6 +163,7 @@ namespace QuickBrowser
         private void Form1_Load(object sender, EventArgs e)
         {
             DoubleBuffered = true;
+
             addJobFree(() =>
             {
                 while (!exit)
@@ -259,10 +260,6 @@ namespace QuickBrowser
             label3.Text = "";
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
-            GlobalMouseHook.Start();
-            GlobalMouseHook.MouseWheelScrolled += mainMouseWheel;
-
-
             setGoodBitmapAndResetGraphic();
             //g = pictureBox1.CreateGraphics();
 
@@ -290,6 +287,10 @@ namespace QuickBrowser
             loopPicture.onExit += LoopPicture_OnExit;
             loopPicture.Visible = false;
             loopPicture.TabStop = false;
+
+            GlobalMouseHook.Start();
+            GlobalMouseHook.MouseWheelScrolled -= mainMouseWheel;
+            GlobalMouseHook.MouseWheelScrolled += mainMouseWheel;
         }
         public class GlobalMouseHook
         {
@@ -378,9 +379,7 @@ namespace QuickBrowser
                 }
                 else if (MouseButtons == MouseButtons.None)
                 {
-                    if (selectCard == null) return;
-
-                    if (changeImageIndex(delta)) return;
+                    if (selectCard == null || changeImageIndex(delta)) return;
                 }
                 return;
             }
@@ -489,7 +488,7 @@ namespace QuickBrowser
 
                 if (over)
                 {
-                    if (!selectCard.isImage)
+                    if (!selectCard.isImage && !selectCard.isVideo)
                     {
                         i = oldI;
                         selectCard = cardList[i];
@@ -2766,8 +2765,23 @@ namespace QuickBrowser
         }
         private bool exit = false;
         private Action refresh;
+        bool _focusing;
 
-        public bool focusing;
+        public bool focusing
+        {
+            get
+            {
+                return _focusing;
+            }
+            set
+            {
+                if (value)
+                {
+                    Focus();
+                }
+                _focusing = value;
+            }
+        }
         bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
         private bool going = false;
         void drawingThread()
@@ -3640,6 +3654,7 @@ namespace QuickBrowser
             {
                 form1.nowPath = "";
                 form1.Show();
+                form1.focusing = true;
             }
             form1.Top = 0;
             closedForms.Remove(form1);
@@ -5611,6 +5626,7 @@ namespace QuickBrowser
 
         private void Form1_MouseDown_1(object sender, MouseEventArgs e)
         {
+            Focus();
         }
 
         private void vlcControl1_MouseUp(object sender, MouseEventArgs e)
@@ -5724,6 +5740,11 @@ namespace QuickBrowser
         }
 
         private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_MouseLeave_1(object sender, EventArgs e)
         {
 
         }
