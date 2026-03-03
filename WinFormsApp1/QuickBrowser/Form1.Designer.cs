@@ -943,9 +943,6 @@ namespace QuickBrowser
 
         #region 影片播放器
 
-        /// <summary>VLC 影片播放控制項</summary>
-        private LibVLCSharp.WinForms.VideoView vlcControl1;
-
         #endregion
 
         #region 群組容器
@@ -954,5 +951,7 @@ namespace QuickBrowser
         private System.Windows.Forms.GroupBox groupBox1;
 
         #endregion
+
+        public LibVLCSharp.WinForms.VideoView vlcControl1;
     }
 }

@@ -55,7 +55,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>CyberpunkIcon %285%29.ico</ApplicationIcon>
+    <ApplicationIcon>FileCardGlow %282%29.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -577,6 +577,8 @@
     <Content Include="ffprobe.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="FileCardGlow %281%29.ico" />
+    <Content Include="FileCardGlow %282%29.ico" />
     <Content Include="filedircard2.ico" />
     <None Include="Resources\314969430_459991629596689_2789618268954753540_n.jpg" />
     <None Include="Resources\Image1.png" />

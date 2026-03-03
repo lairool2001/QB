@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Amib.Threading;
+using Amib.Threading.Internal;
+using EverythingSharp.Fluent;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,18 +9,17 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Media;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO.MemoryMappedFiles;
-using System.Threading;
-using Amib.Threading;
-using Amib.Threading.Internal;
 using unvell.D2DLib.WinForm;
+using static QuickBrowser.Form1;
 using Action = System.Action;
-using System.Media;
-using EverythingSharp.Fluent;
 
 namespace QuickBrowser
 {
@@ -29,6 +31,22 @@ namespace QuickBrowser
         MemoryMappedViewAccessor reader;
         Thread listenOpen;
         public static SmartThreadPool smartThreadPool, smartThreadPool2, smartThreadPoolFree;
+        public class ScrollFilter : IMessageFilter
+        {
+            private const int WM_MOUSEWHEEL = 0x020A;
+
+            public event Action<int> OnScroll;
+
+            public bool PreFilterMessage(ref Message m)
+            {
+                if (m.Msg == WM_MOUSEWHEEL)
+                {
+                    int delta = (short)((m.WParam.ToInt64() >> 16) & 0xFFFF);
+                    OnScroll?.Invoke(delta);
+                }
+                return false; // false = 繼續傳遞, true = 吃掉訊息
+            }
+        }
         public FormMain()
         {
             InitializeComponent();
@@ -37,9 +55,15 @@ namespace QuickBrowser
             smartThreadPool2 = new SmartThreadPool();
             smartThreadPoolFree = new SmartThreadPool();
 
+            hook = new RawInputHook(this, this);
+            hook.OnScroll -= mainMouseWheel;
+            hook.OnScroll += mainMouseWheel;
             /*notifyIcon1.Visible = true;
             notifyIcon1.ShowBalloonTip(1000, "", "QB is running", ToolTipIcon.Info);*/
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
         public static void addJob(Action action)
         {
             WorkItemCallback workItemCallback = (obj) => { action(); return true; };
@@ -75,6 +99,8 @@ namespace QuickBrowser
             });
         }
 
+        RawInputHook hook;
+
         const string constFileCacheFilePath = "Cache/FilePathCacheListManager.json";
         const string settingPath = "QBSetting.json";
 
@@ -92,6 +118,14 @@ namespace QuickBrowser
             form1.goOrGlobalGo(path);
             form1.Focus();
             return form1;
+        }
+        public void mainMouseWheel(int delta)
+        {
+            var enumerator = Form1.aliveForms.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                enumerator.Current.mainMouseWheel(delta);
+            }
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)

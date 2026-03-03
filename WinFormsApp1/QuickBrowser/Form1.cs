@@ -145,21 +145,6 @@ namespace QuickBrowser
             resetingGraphic = false;
             drawPanel.Refresh();
         }
-        public class MouseWheelFilter : IMessageFilter
-        {
-            const int WM_MOUSEWHEEL = 0x020A;
-            public event EventHandler<MouseEventArgs> MouseWheel;
-
-            public bool PreFilterMessage(ref Message m)
-            {
-                if (m.Msg == WM_MOUSEWHEEL)
-                {
-                    int delta = (short)((m.WParam.ToInt64() >> 16) & 0xFFFF);
-                    MouseWheel?.Invoke(this, new MouseEventArgs(MouseButtons.None, 0, 0, 0, delta));
-                }
-                return false;
-            }
-        }
         private void Form1_Load(object sender, EventArgs e)
         {
             DoubleBuffered = true;
@@ -237,13 +222,6 @@ namespace QuickBrowser
             workHeight = pictureBox1.Bounds.Height;
 
             aliveForms.Add(this);
-            /*int a1=1, a2=2;
-            Set2Way set2Way1 = new Set2Way(Set2Way.Direction.normal);
-            set2Way1.set(ref a1,ref a2);
-            Set2Way set2Way2= new Set2Way(Set2Way.Direction.reverse);
-            a1 = 1;
-            a2 = 2;
-            set2Way2.set(ref a1, ref a2);*/
             newGraphic();
 
             label9.Text = "";
@@ -287,58 +265,118 @@ namespace QuickBrowser
             loopPicture.onExit += LoopPicture_OnExit;
             loopPicture.Visible = false;
             loopPicture.TabStop = false;
-
-            GlobalMouseHook.Start();
-            GlobalMouseHook.MouseWheelScrolled -= mainMouseWheel;
-            GlobalMouseHook.MouseWheelScrolled += mainMouseWheel;
         }
-        public class GlobalMouseHook
+
+        public class RawInputHook : NativeWindow
         {
-            private const int WH_MOUSE_LL = 14;
-            private const int WM_MOUSEWHEEL = 0x020A;
+            private const int WM_INPUT = 0x00FF;
+            private const int RID_INPUT = 0x10000003;
+            private const int RIM_TYPEMOUSE = 0;
+            private const int RI_MOUSE_WHEEL = 0x0400;
 
-            private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
-            private static LowLevelMouseProc _proc;
-            private static IntPtr _hookID = IntPtr.Zero;
-
-            public static event Action<int> MouseWheelScrolled;
-
-            [DllImport("user32.dll")]
-            private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
-
-            [DllImport("user32.dll")]
-            private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-            [DllImport("user32.dll")]
-            private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-            [DllImport("kernel32.dll")]
-            private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-            public static void Start()
+            [StructLayout(LayoutKind.Sequential)]
+            struct RAWINPUTDEVICE
             {
-                _proc = HookCallback;
-                using (var process = System.Diagnostics.Process.GetCurrentProcess())
-                using (var module = process.MainModule)
+                public ushort usUsagePage;
+                public ushort usUsage;
+                public uint dwFlags;
+                public IntPtr hwndTarget;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            struct RAWINPUTHEADER
+            {
+                public uint dwType, dwSize;
+                public IntPtr hDevice, wParam;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            struct RAWMOUSE
+            {
+                public ushort usFlags;
+                public uint ulButtons; // 包含 usButtonFlags + usButtonData
+                public uint ulRawButtons;
+                public int lLastX, lLastY;
+                public uint ulExtraInformation;
+
+                public ushort usButtonFlags => (ushort)(ulButtons & 0xFFFF);
+                public short usButtonData => (short)(ulButtons >> 16);
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            struct RAWINPUT
+            {
+                public RAWINPUTHEADER header;
+                public RAWMOUSE mouse;
+            }
+
+            [DllImport("user32.dll")]
+            static extern bool RegisterRawInputDevices(RAWINPUTDEVICE[] pRawInputDevices, uint uiNumDevices, uint cbSize);
+
+            [DllImport("user32.dll")]
+            static extern uint GetRawInputData(IntPtr hRawInput, uint uiCommand, out RAWINPUT pData, ref uint pcbSize, uint cbSizeHeader);
+
+            private Control target;
+            private Form form;
+            public event Action<int> OnScroll;
+
+            public RawInputHook(Form form, Control target)
+            {
+                this.form = form;
+                this.target = target;
+
+                // 建立隱藏視窗來接收 Raw Input
+                CreateHandle(new CreateParams
                 {
-                    _hookID = SetWindowsHookEx(WH_MOUSE_LL, _proc, GetModuleHandle(module.ModuleName), 0);
-                }
-            }
+                    X = 0,
+                    Y = 0,
+                    Width = 0,
+                    Height = 0,
+                    Style = 0x800000 // WS_BORDER
+                });
 
-            public static void Stop()
-            {
-                UnhookWindowsHookEx(_hookID);
-            }
-
-            private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-            {
-                if (nCode >= 0 && wParam == (IntPtr)WM_MOUSEWHEEL)
+                var rid = new RAWINPUTDEVICE[]
                 {
-                    int delta = (short)((Marshal.ReadInt32(lParam + 8) >> 16) & 0xFFFF);
-                    MouseWheelScrolled?.Invoke(delta);
-                }
-                return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    new RAWINPUTDEVICE
+                    {
+                        usUsagePage = 0x01,   // Generic Desktop
+                        usUsage = 0x02,       // Mouse
+                        dwFlags = 0x00000100, // RIDEV_INPUTSINK（背景也收）
+                        hwndTarget = this.Handle
+                    }
+                };
+
+                if (!RegisterRawInputDevices(rid, 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
+                    throw new Exception("RegisterRawInputDevices 失敗");
             }
+
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == WM_INPUT)
+                {
+                    RAWINPUT raw;
+                    uint size = (uint)Marshal.SizeOf<RAWINPUT>();
+                    GetRawInputData(m.LParam, RID_INPUT, out raw, ref size, (uint)Marshal.SizeOf<RAWINPUTHEADER>());
+
+                    if (raw.header.dwType == RIM_TYPEMOUSE &&
+                        raw.mouse.usButtonFlags == RI_MOUSE_WHEEL)
+                    {
+                        int delta = raw.mouse.usButtonData;
+                        var pos = Cursor.Position;
+
+                        if (target.IsHandleCreated)
+                        {
+                            OnScroll?.Invoke(delta);
+                        }
+                    }
+                }
+                base.WndProc(ref m);
+            }
+        }
+
+        private void mainMouseWheel(object sender, MouseEventArgs e)
+        {
+            mainMouseWheel(e.Delta);
         }
 
         private void LoopPicture_OnExit()
@@ -358,9 +396,10 @@ namespace QuickBrowser
                 return area > 50;
             }
         }
-        private void mainMouseWheel(int delta)
+        public void mainMouseWheel(int delta)
         {
             if (!focusing) return;
+            if (!Bounds.Contains(MousePosition)) return;
             if (pictureBox2.Visible || vlcControl1.Visible)
             {
                 if (MouseButtons == MouseButtons.Left)
@@ -3622,7 +3661,6 @@ namespace QuickBrowser
             {
                 return;
             }
-            GlobalMouseHook.Stop();
 
             history.Clear();
             histroyIndex = 0;
@@ -3638,6 +3676,7 @@ namespace QuickBrowser
                 FormMain.lastForm = null;
             }
         }
+        public static List<Form1> formz = new List<Form1>();
 
         public static Form1 getForm1(bool open = true)
         {
@@ -3659,6 +3698,7 @@ namespace QuickBrowser
             form1.Top = 0;
             closedForms.Remove(form1);
             form1.setToDraw();
+            formz.Add(form1);
             return form1;
         }
 
