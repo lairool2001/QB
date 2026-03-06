@@ -4554,6 +4554,7 @@ namespace QuickBrowser
         string old6 = "";
         private void timer1_Tick(object sender, EventArgs e)
         {
+            groupBox1.Visible = false;
             if (!pause || (pause && timer5.Enabled))
             {
                 if (targetPath != old6)
