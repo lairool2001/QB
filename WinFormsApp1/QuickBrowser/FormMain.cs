@@ -124,7 +124,8 @@ namespace QuickBrowser
             var enumerator = Form1.aliveForms.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                enumerator.Current.mainMouseWheel(delta);
+                if (enumerator.Current.Handle == GetForegroundWindow())
+                    enumerator.Current.mainMouseWheel(delta);
             }
         }
 

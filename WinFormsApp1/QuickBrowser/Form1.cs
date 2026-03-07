@@ -5788,6 +5788,12 @@ namespace QuickBrowser
 
         }
 
+        private void pictureBox1_MouseEnter(object sender, EventArgs e)
+        {
+            focusing = true;
+            Focus();
+        }
+
         int bitmapWidth, bitmapHeight;
 
         private Dictionary<Control, bool> controlVisibleRecord = new Dictionary<Control, bool>();
