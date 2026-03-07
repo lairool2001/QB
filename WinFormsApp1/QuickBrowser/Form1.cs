@@ -2856,6 +2856,7 @@ namespace QuickBrowser
 
         private void drawBackground(Graphics g)
         {
+            g.Clear(Color.Black);
             if (background != null)
             {
                 lock (background)
@@ -2867,10 +2868,6 @@ namespace QuickBrowser
                         g.DrawImage(background, backgroundRect);
                     }
                 }
-            }
-            else
-            {
-                g.Clear(Color.Black);
             }
         }
 
@@ -4554,7 +4551,7 @@ namespace QuickBrowser
         string old6 = "";
         private void timer1_Tick(object sender, EventArgs e)
         {
-            groupBox1.Visible = false;
+            bool visible = false;
             if (!pause || (pause && timer5.Enabled))
             {
                 if (targetPath != old6)
@@ -4570,10 +4567,11 @@ namespace QuickBrowser
                 {
                     Point screenCoordinates = Cursor.Position;
                     Point clientCoordinates = this.PointToClient(screenCoordinates);
-                    groupBox1.Visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
+                    visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
                 }
 
             }
+            groupBox1.Visible = visible;
 
 
             if (_mediaPlayer != null && _mediaPlayer.Time > 0)
@@ -4881,8 +4879,8 @@ namespace QuickBrowser
                 card.image = null;
                 card.loadingDraw = false;
                 card.loadImage = null;
-                string aString;
-                qbSetting.fileToImage.TryRemove(card.fullPath, out aString);
+                qbSetting.fileToImage.TryRemove(card.fullPath, out var f);
+                filePathCacheListManager.imagePathToCacheJPGFile.TryRemove(card.fullPath, out _);
                 imagePathToThumbnailCachePool.TryRemove(card.fullPath, out var bitmap);
                 addAndInitCard(card.index, card.fullPath);
                 setToDraw();

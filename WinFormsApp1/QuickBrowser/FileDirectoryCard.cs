@@ -153,6 +153,11 @@ namespace QuickBrowser
             }
             set
             {
+                if (value == null)
+                {
+                    _2image = _image = null;
+                    return;
+                }
                 imageWidth = value.Width;
                 imageHeight = value.Height;
                 _image = value;
