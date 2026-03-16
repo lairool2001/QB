@@ -491,7 +491,7 @@ namespace QuickBrowser
                 {
                     if (pictureBox2.Image != null)
                     {
-                        pictureBox2.Image.Dispose();
+                        //pictureBox2.Image.Dispose();
                     }
                     if (vlcControl1.Visible)
                     {
@@ -688,7 +688,7 @@ namespace QuickBrowser
         {
             maining = true;
             if (action != null)
-                pictureBox1.Invoke(action);
+                Invoke(action);
             maining = false;
         }
 
@@ -850,9 +850,9 @@ namespace QuickBrowser
                         callMain(() =>
                         {
                             //richTextBox3.Visible = true;
-                            lockRichText3 = true;
+                            lockRichTextBox3 = true;
                             richTextBox3.Text = "";
-                            lockRichText3 = false;
+                            lockRichTextBox3 = false;
 
                             richTextBox4.Text = "";
 
@@ -3986,15 +3986,15 @@ namespace QuickBrowser
                 selected.Clear();
             }
 
+
             callMain(() =>
             {
-                lockRichText3 = true;
-                richTextBox3.Text = "";
-                lockRichText3 = false;
-
+                lockRichTextBox3 = true;
                 lockRichTextBox7 = false;
+                richTextBox3.Text = "";
                 richTextBox4.Text = "";
                 label2.Text = "";
+                lockRichTextBox3 = false;
             });
         }
         void selectedHandleUI()
@@ -4226,10 +4226,10 @@ namespace QuickBrowser
             }
         }
 
-        bool lockRichText3 = false;
+        bool lockRichTextBox3 = false;
         private void richTextBox3_TextChanged(object sender, EventArgs e)
         {
-            if (lockRichText3) return;
+            if (lockRichTextBox3) return;
             if (selectCard != null)
             {
                 string path = richTextBox3.Text.Replace("\r", "").Replace("\n", "");
@@ -4238,7 +4238,6 @@ namespace QuickBrowser
                 if (d == null)
                     return;
                 string newPath = Path.Combine(d, path);
-                //Debug.WriteLine(newPath);
                 if (selectCard.fullPath == newPath)
                 {
                     return;
@@ -4251,7 +4250,7 @@ namespace QuickBrowser
                     {
                         if (File.Exists(selectCard.fullPath))
                         {
-                            System.IO.File.SetAttributes(selectCard.fullPath, System.IO.FileAttributes.Normal);
+                            File.SetAttributes(selectCard.fullPath, System.IO.FileAttributes.Normal);
                             File.Move(selectCard.fullPath, newPath);
                         }
                         else if (Directory.Exists(selectCard.fullPath))
@@ -4282,10 +4281,10 @@ namespace QuickBrowser
                     resetCache();
                     setToDraw();
                     System.Media.SystemSounds.Beep.Play();
-                    richTextBox4.Invoke(new Action(() =>
+                    callMain(() =>
                     {
                         richTextBox4.Text = newPath + "\n\n" + selectCard.fullPath2;
-                    }));
+                    });
 
                 });
             }
@@ -4813,9 +4812,9 @@ namespace QuickBrowser
                 }
                 selectCard = selected[0];
             }
-            lockRichText3 = true;
+            lockRichTextBox3 = true;
             richTextBox3.Text = selectCard.fileName.Replace("\r", "").Replace("\n", "");
-            lockRichText3 = false;
+            lockRichTextBox3 = false;
             richTextBox4.Text = selectCard.fullPath + "\n\n" + selectCard.fullPath2;
         }
 

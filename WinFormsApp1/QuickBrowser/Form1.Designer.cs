@@ -644,11 +644,12 @@ namespace QuickBrowser
             // vlcControl1
             // 
             this.vlcControl1.BackColor = System.Drawing.Color.Black;
+            this.vlcControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.vlcControl1.Location = new System.Drawing.Point(0, 0);
             this.vlcControl1.Margin = new System.Windows.Forms.Padding(0);
             this.vlcControl1.MediaPlayer = null;
             this.vlcControl1.Name = "vlcControl1";
-            this.vlcControl1.Size = new System.Drawing.Size(802, 604);
+            this.vlcControl1.Size = new System.Drawing.Size(1050, 777);
             this.vlcControl1.TabIndex = 41;
             this.vlcControl1.Text = "vlcControl1";
             this.vlcControl1.Visible = false;
