@@ -4561,14 +4561,12 @@ namespace QuickBrowser
                         old6 = targetPath;
                     });
                 }
-
-                if (MouseButtons != MouseButtons.Left)
-                {
-                    Point screenCoordinates = Cursor.Position;
-                    Point clientCoordinates = this.PointToClient(screenCoordinates);
-                    visible = (clientCoordinates.Y > Height * 0.8f && clientCoordinates.Y < Height) && vlcControl1.Visible;
-                }
-
+            }
+            if (vlcControl1.Visible && MouseButtons != MouseButtons.Left)
+            {
+                Point clientCoordinates = this.PointToClient(Cursor.Position);
+                visible = clientCoordinates.Y > ClientSize.Height * 0.8f
+                       && clientCoordinates.Y <= ClientSize.Height;
             }
             groupBox1.Visible = visible;
 
