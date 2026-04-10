@@ -296,7 +296,7 @@ namespace QuickBrowser
                 var path = bitmapPaths[i2];
                 drawingPath.Add(path);
 
-                if (!pathToDraw.TryGetValue(path, out Draw draw))
+                if (!pathToDraw.TryGetValue(path, out Draw draw) || draw== null)
                 {
                     draw = new Draw();
                     Bitmap bitmap = null;

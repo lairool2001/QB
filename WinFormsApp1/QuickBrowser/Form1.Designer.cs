@@ -66,11 +66,11 @@ namespace QuickBrowser
             this.button22 = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
+            this.comboBox1 = new QuickBrowser.FlatComboBox();
+            this.comboBox2 = new QuickBrowser.FlatComboBox();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
             this.trackBar2 = new System.Windows.Forms.TrackBar();
-            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown1 = new QuickBrowser.FlatNumericUpDown();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
@@ -622,12 +622,8 @@ namespace QuickBrowser
             this.pictureBox2.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox2_MouseMove);
             // 
             // comboBox1
-            // 
+            //
             this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox1.BackColor = System.Drawing.Color.FromArgb(42, 42, 60);
-            this.comboBox1.ForeColor = System.Drawing.Color.FromArgb(210, 210, 235);
-            this.comboBox1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Items.AddRange(new object[] {
             "Cover",
@@ -642,12 +638,8 @@ namespace QuickBrowser
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // comboBox2
-            // 
+            //
             this.comboBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox2.BackColor = System.Drawing.Color.FromArgb(42, 42, 60);
-            this.comboBox2.ForeColor = System.Drawing.Color.FromArgb(210, 210, 235);
-            this.comboBox2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox2.FormattingEnabled = true;
             this.comboBox2.Items.AddRange(new object[] {
             "None sort",
@@ -694,8 +686,6 @@ namespace QuickBrowser
             // numericUpDown1
             // 
             this.numericUpDown1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.numericUpDown1.BackColor = System.Drawing.Color.FromArgb(42, 42, 60);
-            this.numericUpDown1.ForeColor = System.Drawing.Color.FromArgb(210, 210, 235);
             this.numericUpDown1.Location = new System.Drawing.Point(763, 267);
             this.numericUpDown1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.numericUpDown1.Maximum = new decimal(new int[] {
@@ -999,10 +989,10 @@ namespace QuickBrowser
         #region 下拉選單控制項
 
         /// <summary>顯示模式選擇 (Cover/Zoom/Center)</summary>
-        private System.Windows.Forms.ComboBox comboBox1;
+        private QuickBrowser.FlatComboBox comboBox1;
 
         /// <summary>排序模式選擇</summary>
-        private System.Windows.Forms.ComboBox comboBox2;
+        private QuickBrowser.FlatComboBox comboBox2;
 
         #endregion
 
@@ -1019,7 +1009,7 @@ namespace QuickBrowser
         #region 數值與核取控制項
 
         /// <summary>數值輸入</summary>
-        private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private QuickBrowser.FlatNumericUpDown numericUpDown1;
 
         /// <summary>無限循環播放核取方塊</summary>
         private System.Windows.Forms.CheckBox checkBox1;

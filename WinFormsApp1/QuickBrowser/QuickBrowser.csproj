@@ -234,6 +234,12 @@
     <Compile Include="ChooseBox.Designer.cs">
       <DependentUpon>ChooseBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="FlatComboBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="FlatNumericUpDown.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="FFmpegThumbnailer.cs" />
     <Compile Include="Ex.cs" />
     <Compile Include="Explorer.cs">
