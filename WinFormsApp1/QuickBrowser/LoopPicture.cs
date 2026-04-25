@@ -175,6 +175,7 @@ namespace QuickBrowser
             change = false;
             float h = intList[2].d.rect.Height;
             float h2 = intList[3].d.rect.Height;
+            if (h <= 0 || h2 <= 0) return;
             if (delta <= -h2)
             {
                 offsetIndex++;
