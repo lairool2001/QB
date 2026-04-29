@@ -2149,15 +2149,17 @@ namespace QuickBrowser
                     int biggest = 0;
                     string biggestImage = null;
                     (var path, var createTime) = GetFiles(ff);
+
+
                     for (int k = 0; k < path.Length; k++)
                     {
                         var p = path[k];
                         var x = Path.GetExtension(p);
                         int w = 0, h = 0;
-                        bool img = imageFormat.Contains(x);
-                        if (img)
+                        bool v = videoFormat.Contains(x);
+                        if (v)
                         {
-                            (w, h) = GetImageSize(p);
+                            (w, h) = GetVideoSize(p);
                             int size = w * h;
                             if (size > biggest)
                             {
@@ -2168,7 +2170,37 @@ namespace QuickBrowser
                     }
                     if (biggest > 0)
                     {
-                        card.image = LoadImagePure(biggestImage);
+                        string smallerImagePath = null;
+                        string path2 = null;
+                        bool isCreateNewThumb;
+                        if (filePathCacheListManager.imagePathToCacheJPGFile.TryGetValue(biggestImage, out var jpeg))
+                        {
+                            //使用已有縮圖
+                            smallerImagePath = path2 = jpeg;
+                            isCreateNewThumb = false;
+                        }
+                        else
+                        {
+                            //創新縮圖
+                            isCreateNewThumb = true;
+                            smallerImagePath = requestSmallerPath();
+                        }
+                        if (imagePathToThumbnailCachePool.ContainsKey(biggestImage))
+                        {
+                            card.setCardImageSafe(imagePathToThumbnailCachePool[biggestImage], drawPanel);
+                        }
+                        else
+                        {
+                            card.loadingDraw = true;
+                            if (isCreateNewThumb)
+                            {
+                                card.image = getSmallCenter(false, biggestImage, smallerImagePath);
+                            }
+                            else
+                            {
+                                card.image = LoadImagePure(path2);
+                            }
+                        }
                     }
                     else
                     {
@@ -2177,10 +2209,10 @@ namespace QuickBrowser
                             var p = path[k];
                             var x = Path.GetExtension(p);
                             int w = 0, h = 0;
-                            bool v = videoFormat.Contains(x);
-                            if (v)
+                            bool img = imageFormat.Contains(x);
+                            if (img)
                             {
-                                (w, h) = GetVideoSize(p);
+                                (w, h) = GetImageSize(p);
                                 int size = w * h;
                                 if (size > biggest)
                                 {
@@ -2191,7 +2223,7 @@ namespace QuickBrowser
                         }
                         if (biggest > 0)
                         {
-                            card.image = FFmpegThumbnailer.GetThumbnailFromVideo(biggestImage);
+                            card.image = LoadImagePure(biggestImage);
                         }
                     }
                 }
