@@ -13,20 +13,26 @@ public unsafe class FFmpegThumbnailer
     static FFmpegThumbnailer()
     {
         string dir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\";
-        // 指定 FFmpeg DLL 目錄，依照安裝位置設定
-        // Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";path_to_ffmpeg_bin");
-        ffmpeg.RootPath = dir + "FFmpeg\\bin\\x64"; // 請設成存放 ffmpeg dlls 資料夾
+        ffmpeg.RootPath = dir + "FFmpeg\\bin\\x64";
     }
 
-    public static Bitmap GetThumbnailFromVideo(string filePath, int targetSecond, int maxDimension = 512)
+    /// <summary>
+    /// 取得影片縮圖。targetSecond 預設 -1 表示取影片中間時間點。
+    /// </summary>
+    public static Bitmap GetThumbnailFromVideo(string filePath, int targetSecond = -1, int maxDimension = 512)
     {
-        //ffmpeg.av_register_all();
-
         AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
         if (ffmpeg.avformat_open_input(&pFormatContext, filePath, null, null) != 0)
             throw new ApplicationException("Cannot open video file.");
         if (ffmpeg.avformat_find_stream_info(pFormatContext, null) < 0)
             throw new ApplicationException("Cannot find stream info.");
+
+        // 取得 duration，決定 targetSecond
+        if (targetSecond < 0)
+        {
+            double duration = pFormatContext->duration / (double)ffmpeg.AV_TIME_BASE;
+            targetSecond = (int)(duration / 2);
+        }
 
         int videoStreamIndex = -1;
         AVCodecParameters* pCodecParameters = null;
@@ -76,7 +82,6 @@ public unsafe class FFmpegThumbnailer
 
         byte_ptrArray4 dstData = new byte_ptrArray4();
         int_array4 dstLinesize = new int_array4();
-
         ffmpeg.av_image_fill_arrays(ref dstData, ref dstLinesize, buffer, AVPixelFormat.AV_PIX_FMT_BGR24, width, height, 1);
 
         SwsContext* pSwsCtx = ffmpeg.sws_getContext(
@@ -152,7 +157,6 @@ public unsafe class FFmpegThumbnailer
             ffmpeg.av_free(buffer);
             ffmpeg.av_frame_free(&pFrame);
             ffmpeg.av_packet_free(&pPacket);
-            //ffmpeg.avcodec_close(pCodecContext);
             ffmpeg.avcodec_free_context(&pCodecContext);
             ffmpeg.avformat_close_input(&pFormatContext);
             ffmpeg.avformat_free_context(pFormatContext);
@@ -184,5 +188,4 @@ public unsafe class FFmpegThumbnailer
         }
         return (width, height);
     }
-
 }

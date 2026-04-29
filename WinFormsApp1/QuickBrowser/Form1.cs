@@ -1,6 +1,7 @@
 ﻿using Amib.Threading;
 using EverythingSharp.Enums;
 using EverythingSharp.Fluent;
+using FFmpeg.AutoGen;
 using LibVLCSharp.Shared;
 using Microsoft.VisualBasic.FileIO;
 using System;
@@ -28,6 +29,7 @@ using Image = System.Drawing.Image;
 using iwwsh = IWshRuntimeLibrary;
 using Path = System.IO.Path;
 using Rectangle = System.Drawing.Rectangle;
+using MediaInfo;
 
 namespace QuickBrowser
 {
@@ -802,11 +804,11 @@ namespace QuickBrowser
                     {
                         if (isDisk)
                         {
-                            setNewHistroy(computerPath);
+                            setNewHistory(computerPath);
                         }
                         else if (isFolder)
                         {
-                            setNewHistroy(noneProcessPath);
+                            setNewHistory(noneProcessPath);
                         }
                     }
 
@@ -996,40 +998,40 @@ namespace QuickBrowser
                 });
             }
         }
+        object _everythingLock = new object();
         (string[], DateTime[]) GetFiles(string path)
         {
-            IEnumerable<EverythingEntry> results = FormMain.everything
-           .SearchFor($"parent:\"{path}\" file:")
-           .WithOffset(0)
-           .GetFields(RequestFlags.FullPathAndFileName | RequestFlags.DateRecentlyChanged)
-           .Execute();
-            List<string> strings = new List<string>();
-            List<DateTime> changedz = new List<DateTime>();
-            var e = results.GetEnumerator();
-            while (e.MoveNext())
+            lock (_everythingLock)
             {
-                strings.Add(e.Current.FullPath);
-                changedz.Add(e.Current.DateRecentlyChanged ?? DateTime.MinValue);
+                var results = FormMain.everything
+                    .SearchFor($"file: infolder:\"{path}\" ")
+                    .WithOffset(0)
+                    .GetFields(RequestFlags.FullPathAndFileName | RequestFlags.DateRecentlyChanged)
+                    .Execute()
+                    .ToList();
+
+                var strings = results.Select(e => e.FullPath).ToArray();
+                var changedz = results.Select(e => e.DateRecentlyChanged ?? DateTime.MinValue).ToArray();
+
+                return (strings, changedz);
             }
-            return (strings.ToArray(), changedz.ToArray());
         }
         (string[], DateTime[]) GetDirectories(string path)
         {
-
-            IEnumerable<EverythingEntry> results = FormMain.everything
-           .SearchFor($"parent:\"{path}\" attributes:D")
-           .WithOffset(0)
-           .GetFields(RequestFlags.FullPathAndFileName | RequestFlags.DateRecentlyChanged)
-           .Execute();
-            List<string> strings = new List<string>();
-            List<DateTime> changedz = new List<DateTime>();
-            var e = results.GetEnumerator();
-            while (e.MoveNext())
+            lock (_everythingLock)
             {
-                strings.Add(e.Current.FullPath);
-                changedz.Add(e.Current.DateRecentlyChanged ?? DateTime.MinValue);
+                var results = FormMain.everything
+                    .SearchFor($"infolder:\"{path}\" folder:")
+                    .WithOffset(0)
+                    .GetFields(RequestFlags.FullPathAndFileName | RequestFlags.DateRecentlyChanged)
+                    .Execute()
+                    .ToList();
+
+                var strings = results.Select(e => e.FullPath).ToArray();
+                var changedz = results.Select(e => e.DateRecentlyChanged ?? DateTime.MinValue).ToArray();
+
+                return (strings, changedz);
             }
-            return (strings.ToArray(), changedz.ToArray());
         }
         volatile bool sorting;
         void sortCardByComboBox2()
@@ -1428,12 +1430,13 @@ namespace QuickBrowser
                     loadingDraw = false;
                     setToDraw();
                 }
+
                 sortCardByComboBox2();
             });
 
         }
 
-        private void setNewHistroy(string newHistroy)
+        private void setNewHistory(string newHistroy)
         {
             if (histroyIndex >= 0 && histroyIndex < history.Count)
             {
@@ -2134,6 +2137,64 @@ namespace QuickBrowser
             card.isVideo = card.isImage = false;
             handleCustomizationImage(f, card);
 
+            card.loadingDraw = false;
+            card.loadImage = () =>
+            {
+                lock (card)
+                {
+                    string ff = f;
+                    card.image = Properties.Resources.Image1;
+                    int biggest = 0;
+                    string biggestImage = null;
+                    (var path, var createTime) = GetFiles(ff);
+                    for (int k = 0; k < path.Length; k++)
+                    {
+                        var p = path[k];
+                        var x = Path.GetExtension(p);
+                        int w = 0, h = 0;
+                        bool img = imageFormat.Contains(x);
+                        if (img)
+                        {
+                            (w, h) = GetImageSize(p);
+                            int size = w * h;
+                            if (size > biggest)
+                            {
+                                biggest = size;
+                                biggestImage = p;
+                            }
+                        }
+                    }
+                    if (biggest > 0)
+                    {
+                        card.image = LoadImagePure(biggestImage);
+                    }
+                    else
+                    {
+                        for (int k = 0; k < path.Length; k++)
+                        {
+                            var p = path[k];
+                            var x = Path.GetExtension(p);
+                            int w = 0, h = 0;
+                            bool v = videoFormat.Contains(x);
+                            if (v)
+                            {
+                                (w, h) = GetVideoSize(p);
+                                int size = w * h;
+                                if (size > biggest)
+                                {
+                                    biggest = size;
+                                    biggestImage = p;
+                                }
+                            }
+                        }
+                        if (biggest > 0)
+                        {
+                            card.image = GetThumbnail(biggestImage,requestSmallerPath());
+                        }
+                    }
+                }
+            };
+
             card.onMouseDown = () =>
             {
                 go(card.fullPath);
@@ -2580,6 +2641,7 @@ namespace QuickBrowser
                         case FileDirectoryCard.Type.file:
                             break;
                         case FileDirectoryCard.Type.directory:
+                            g.FillRectangle(Brushes.Yellow, r);
                             break;
                         default:
                             break;
@@ -2588,10 +2650,6 @@ namespace QuickBrowser
                     #region 背景跟檔案圖一起畫
 
                     RectangleF rBlock = r4;
-                    if (card.image == null && card.loadImage == null)
-                    {
-                        card.image = FormMain.folder;
-                    }
                     if (card.image != null)
                     {
                         int w, h;
@@ -2780,6 +2838,64 @@ namespace QuickBrowser
             }
         }
         int previousTime = 0;
+
+        static (int width, int height) GetVideoSize(string path)
+        {
+            var mi = new MediaInfo.MediaInfo();
+            mi.Open(path);
+            int w = int.Parse(mi.Get(StreamKind.Video, 0, "Width"));
+            int h = int.Parse(mi.Get(StreamKind.Video, 0, "Height"));
+            mi.Close();
+            return (w, h);
+        }
+        static (int width, int height) GetImageSize(string path)
+        {
+            var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            var br = new BinaryReader(fs);
+
+            // 讀前幾個 bytes 判斷格式
+            byte[] header = br.ReadBytes(8);
+
+            // PNG: 89 50 4E 47
+            if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47)
+            {
+                fs.Seek(16, SeekOrigin.Begin);
+                int w = BitConverter.ToInt32(br.ReadBytes(4).Reverse().ToArray(), 0);
+                int h = BitConverter.ToInt32(br.ReadBytes(4).Reverse().ToArray(), 0);
+                return (w, h);
+            }
+
+            // JPEG: FF D8
+            if (header[0] == 0xFF && header[1] == 0xD8)
+            {
+                fs.Seek(2, SeekOrigin.Begin);
+                while (fs.Position < fs.Length)
+                {
+                    if (br.ReadByte() != 0xFF) continue;
+                    byte marker = br.ReadByte();
+                    if (marker == 0xC0 || marker == 0xC2)
+                    {
+                        br.ReadBytes(3);
+                        int h = (br.ReadByte() << 8) | br.ReadByte();
+                        int w = (br.ReadByte() << 8) | br.ReadByte();
+                        return (w, h);
+                    }
+                    int len = (br.ReadByte() << 8) | br.ReadByte();
+                    fs.Seek(len - 2, SeekOrigin.Current);
+                }
+            }
+
+            // BMP: 42 4D
+            if (header[0] == 0x42 && header[1] == 0x4D)
+            {
+                fs.Seek(18, SeekOrigin.Begin);
+                int w = br.ReadInt32();
+                int h = br.ReadInt32();
+                return (w, h);
+            }
+
+            throw new NotSupportedException("不支援的圖片格式！");
+        }
         private void waitLoadingAnimation(Graphics g)
         {
             double scaleRec;
@@ -3072,7 +3188,7 @@ namespace QuickBrowser
             {
                 return null;
             }
-            var thumbImage = FFmpegThumbnailer.GetThumbnailFromVideo(videoPath, 5);
+            var thumbImage = FFmpegThumbnailer.GetThumbnailFromVideo(videoPath);
             if (thumbImage != null)
             {
                 filePathCacheListManager.imagePathToEditTime[videoPath] = DateTime.Now;
@@ -4488,7 +4604,7 @@ namespace QuickBrowser
 
                 search = search.Replace("\r", "");
                 histroyMode = false;
-                setNewHistroy("s:" + search);
+                setNewHistory("s:" + search);
                 initBrowswerView();
                 oldRichText = nowPath;
                 string[] fz;
