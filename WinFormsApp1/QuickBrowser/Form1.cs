@@ -3,6 +3,7 @@ using EverythingSharp.Enums;
 using EverythingSharp.Fluent;
 using FFmpeg.AutoGen;
 using LibVLCSharp.Shared;
+using MediaInfo;
 using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Concurrent;
@@ -21,7 +22,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Shapes;
 using TsudaKageyu;
+using static unvell.D2DLib.WinForm.Win32;
 using Action = Amib.Threading.Action;
 using BorderStyle = System.Windows.Forms.BorderStyle;
 using Exception = System.Exception;
@@ -29,7 +32,6 @@ using Image = System.Drawing.Image;
 using iwwsh = IWshRuntimeLibrary;
 using Path = System.IO.Path;
 using Rectangle = System.Drawing.Rectangle;
-using MediaInfo;
 
 namespace QuickBrowser
 {
@@ -2189,7 +2191,7 @@ namespace QuickBrowser
                         }
                         if (biggest > 0)
                         {
-                            card.image = GetThumbnail(biggestImage,requestSmallerPath());
+                            card.image = FFmpegThumbnailer.GetThumbnailFromVideo(biggestImage);
                         }
                     }
                 }
@@ -2842,11 +2844,20 @@ namespace QuickBrowser
         static (int width, int height) GetVideoSize(string path)
         {
             var mi = new MediaInfo.MediaInfo();
-            mi.Open(path);
-            int w = int.Parse(mi.Get(StreamKind.Video, 0, "Width"));
-            int h = int.Parse(mi.Get(StreamKind.Video, 0, "Height"));
-            mi.Close();
-            return (w, h);
+            try
+            {
+                mi.Open(path);
+                string wStr = mi.Get(StreamKind.Video, 0, "Width");
+                string hStr = mi.Get(StreamKind.Video, 0, "Height");
+                if (int.TryParse(wStr, out int w) && int.TryParse(hStr, out int h))
+                    return (w, h);
+                return (0, 0);
+            }
+            finally
+            {
+                mi.Close();
+            }
+            return (0, 0);
         }
         static (int width, int height) GetImageSize(string path)
         {
@@ -2893,8 +2904,15 @@ namespace QuickBrowser
                 int h = br.ReadInt32();
                 return (w, h);
             }
-
-            throw new NotSupportedException("不支援的圖片格式！");
+            // GIF: 47 49 46 38 (GIF8)
+            if (header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x38)
+            {
+                fs.Seek(6, SeekOrigin.Begin);
+                int w = br.ReadUInt16(); // little-endian 直接讀
+                int h = br.ReadUInt16();
+                return (w, h);
+            }
+            return (0, 0);
         }
         private void waitLoadingAnimation(Graphics g)
         {
@@ -3213,7 +3231,6 @@ namespace QuickBrowser
                 {
                     imagePathToThumbnailCachePool.TryRemove(item.Key, out b2);
                     cacheBitmapPixelCount -= (b2.Width * b2.Height);
-                    break;
                 }
             }
             imagePathToThumbnailCachePool[filePath] = thumbnailImage;
