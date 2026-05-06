@@ -1572,6 +1572,7 @@ namespace QuickBrowser
                 {
                     string cacheJPEG;
                     filePathCacheListManager.imagePathToCacheJPGFile.TryRemove(imagePath, out cacheJPEG);
+                    filePathCacheListManager.imagePathToEditTime.TryRemove(imagePath, out _);
                 }
 
                 if (filePathCacheListManager.imageFlow > FilePathCacheListManager.imageFlowMax)
@@ -4496,7 +4497,6 @@ namespace QuickBrowser
                         qbSetting.folderToBackgroundPath.TryRemove(card.fullPath, out _);
                         qbSetting.folderToImageShowType.TryRemove(card.fullPath, out _);
                         qbSetting.fileToImage.TryRemove(card.fullPath, out _);
-                        setToDraw();
                     }
                     catch
                     {
@@ -4518,6 +4518,7 @@ namespace QuickBrowser
                     System.Media.SystemSounds.Hand.Play();
                 }
                 selectCard = null;
+                setToDraw();
             });
         }
 
@@ -4919,7 +4920,7 @@ namespace QuickBrowser
                         System.Media.SystemSounds.Hand.Play();
                     }
                     float recordScrollY = scrollY;
-                    goOrGlobalGo();
+                    goOrGlobalGo(nowPath);
                     targetScrollY = scrollY = recordScrollY;
                 };
 
@@ -5043,6 +5044,7 @@ namespace QuickBrowser
                 card.loadImage = null;
                 qbSetting.fileToImage.TryRemove(card.fullPath, out var f);
                 filePathCacheListManager.imagePathToCacheJPGFile.TryRemove(card.fullPath, out _);
+                filePathCacheListManager.imagePathToEditTime.TryRemove(card.fullPath, out _);
                 imagePathToThumbnailCachePool.TryRemove(card.fullPath, out var bitmap);
                 addAndInitCard(card.index, card.fullPath);
                 setToDraw();
@@ -5201,7 +5203,7 @@ namespace QuickBrowser
                     }
 
                     float recordScrollY = scrollY;
-                    goOrGlobalGo();
+                    goOrGlobalGo(nowPath);
                     targetScrollY = scrollY = recordScrollY;
                 };
                 Invoke(end);
