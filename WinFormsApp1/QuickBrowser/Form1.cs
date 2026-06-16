@@ -3466,8 +3466,6 @@ namespace QuickBrowser
             {
                 if (pictureBox2.Visible)
                 {
-                    timer3.Interval = (int)numericUpDown1.Value;
-                    timer3.Enabled = !timer3.Enabled;
                 }
 
                 return;
@@ -4061,13 +4059,6 @@ namespace QuickBrowser
         bool leftScrollDown;
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            /*if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
-            {
-                scrollY += e.Y - oldY;
-                oldY = e.Y;
-                setToDraw();
-            }*/
-
             //right scroll bar
             if (e.Button == MouseButtons.Left)
             {
@@ -5296,7 +5287,6 @@ namespace QuickBrowser
 
         private void pictureBox2_MouseDown(object sender, MouseEventArgs e)
         {
-            timer3.Enabled = false;
             oldMousePosX = e.X;
             oldMousePosY = e.Y;
             if (e.Button == MouseButtons.Middle)
@@ -5559,10 +5549,6 @@ namespace QuickBrowser
         }
 
         private void pictureBox1_MouseHover(object sender, EventArgs e)
-        {
-        }
-
-        private void timer3_Tick(object sender, EventArgs e)
         {
         }
 
