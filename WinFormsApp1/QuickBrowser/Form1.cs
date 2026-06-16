@@ -4725,6 +4725,10 @@ namespace QuickBrowser
                 visible = clientCoordinates.Y > ClientSize.Height * 0.8f
                        && clientCoordinates.Y <= ClientSize.Height;
             }
+            else
+            {
+                visible = true;
+            }
             groupBox1.Visible = visible;
 
 
