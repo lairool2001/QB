@@ -211,13 +211,7 @@ namespace QuickBrowser
             FilePathCacheListManager filePathCacheListManager;
             if (!File.Exists(constFileCacheFilePath))
             {
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                filePathCacheListManager = new FilePathCacheListManager();
-                Directory.CreateDirectory(Path.GetDirectoryName(constFileCacheFilePath));
-                File.WriteAllText(constFileCacheFilePath, JsonConvert.SerializeObject(filePathCacheListManager));
+                filePathCacheListManager = create(dir);
             }
             else
             {
@@ -229,7 +223,7 @@ namespace QuickBrowser
                 }
                 catch
                 {
-                    filePathCacheListManager = null;
+                    filePathCacheListManager = create(dir);
                 }
 
                 if (filePathCacheListManager.pathStateHashSet == null)
@@ -289,6 +283,20 @@ namespace QuickBrowser
             }
             StartNewForm(Program.path);
             Program.path = null;
+        }
+
+        private static FilePathCacheListManager create(string dir)
+        {
+            FilePathCacheListManager filePathCacheListManager;
+        a:
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            filePathCacheListManager = new FilePathCacheListManager();
+            Directory.CreateDirectory(Path.GetDirectoryName(constFileCacheFilePath));
+            File.WriteAllText(constFileCacheFilePath, JsonConvert.SerializeObject(filePathCacheListManager));
+            return filePathCacheListManager;
         }
 
         private void toolStripMenuItem2_MouseDown(object sender, MouseEventArgs e)

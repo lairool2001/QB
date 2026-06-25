@@ -459,6 +459,7 @@ namespace QuickBrowser
         {
             vlcControl1.MediaPlayer.Stop();
             vlcControl1.Visible = false;
+            groupBox1.Visible = false;
             timer5.Stop();
         }
 
@@ -2729,7 +2730,6 @@ namespace QuickBrowser
                     #endregion
 
                     RectangleF r5 = r4;
-                    r5.Y += 100;
                     r5.Height = 60;
                     string indexStr = card.index.ToString();
                     SizeF sizeF = g.MeasureString(indexStr, font2);
@@ -3153,7 +3153,7 @@ namespace QuickBrowser
                 image.Dispose();
             }
         }
-        const int picW = 150, picH = 100;
+        const int picW = 300, picH = 300;
         private Bitmap getSmallerImage(string smallerPath)
         {
             Bitmap smallerImage;
@@ -4708,6 +4708,18 @@ namespace QuickBrowser
         private void timer1_Tick(object sender, EventArgs e)
         {
             bool visible = false;
+            if (vlcControl1.Visible)
+            {
+                Point clientCoordinates = this.PointToClient(Cursor.Position);
+                visible = clientCoordinates.Y > ClientSize.Height * 0.8f
+                       && clientCoordinates.Y <= ClientSize.Height;
+            }
+            else
+            {
+                visible = false;
+            }
+            groupBox1.Visible = visible;
+
             if (!pause || (pause && timer5.Enabled))
             {
                 if (targetPath != old6)
@@ -4719,17 +4731,6 @@ namespace QuickBrowser
                     });
                 }
             }
-            if (vlcControl1.Visible && MouseButtons != MouseButtons.Left)
-            {
-                Point clientCoordinates = this.PointToClient(Cursor.Position);
-                visible = clientCoordinates.Y > ClientSize.Height * 0.8f
-                       && clientCoordinates.Y <= ClientSize.Height;
-            }
-            else
-            {
-                visible = true;
-            }
-            groupBox1.Visible = visible;
 
 
             if (_mediaPlayer != null && _mediaPlayer.Time > 0)
@@ -4761,10 +4762,7 @@ namespace QuickBrowser
                     }
                 }
             }
-            else
-            {
 
-            }
             if (MouseButtons == MouseButtons.Middle && _mediaPlayer.Time > 0)
             {
                 timer5.Stop();
