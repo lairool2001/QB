@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Speech.Synthesis;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -24,6 +25,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using TsudaKageyu;
+using WebPWrapper.WinForms;
 using static unvell.D2DLib.WinForm.Win32;
 using Action = Amib.Threading.Action;
 using BorderStyle = System.Windows.Forms.BorderStyle;
@@ -1324,7 +1326,7 @@ namespace QuickBrowser
             }
         }
         //BMP, GIF, EXIF, JPG, PNG and TIFF
-        readonly HashSet<string> imageFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".gif", ".exif", ".jpg", ".jpeg", ".png", ".tiff", ".jfif" };
+        readonly HashSet<string> imageFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".gif", ".exif", ".jpg", ".jpeg", ".png", ".tiff", ".jfif",".webp" };
         readonly HashSet<string> videoFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mp4", ".wmv", ".webm", ".mov", ".avi", ".mkv", ".ts", ".mp3", ".wav", ".ogg" };
         readonly HashSet<string> textFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".ini", ".cs", ".xml", ".php", ".log", ".bat", ".ps1" };
         volatile bool loadAllCard = false;
@@ -3290,6 +3292,7 @@ namespace QuickBrowser
             return bitmap;
         }
         static volatile ConcurrentDictionary<string, byte[]> pathToBitmap = new ConcurrentDictionary<string, byte[]>();
+        static Webp webp = new Webp("libwebp-x64.dll");
         Bitmap LoadImagePure(string path)
         {
             byte[] bytes;
@@ -3302,7 +3305,16 @@ namespace QuickBrowser
             if (bytes == null || bytes.Length == 0) return null;
             try
             {
-                bitmap = (Bitmap)(imageConverter).ConvertFrom(bytes);
+                if (Path.GetExtension(path).ToLower() == ".webp")
+                {
+                    MemoryStream stream = new MemoryStream(bytes);
+                    bitmap = webp.Decode(stream, new WindowsDecoderOptions());
+                    stream.Close();
+                }
+                else
+                {
+                    bitmap = (Bitmap)(imageConverter).ConvertFrom(bytes);
+                }
                 return bitmap;
             }
             catch (Exception ex)
