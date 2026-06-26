@@ -2037,11 +2037,6 @@ namespace QuickBrowser
             {
                 callMain(() =>
                 {
-                    trackBar2.SmallChange = 1;
-                    int newMax = (int)_mediaPlayer.Media.Duration;
-                    int newValue = (int)Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration);
-                    trackBar2.Maximum = newMax;
-                    trackBar2.Minimum = 0;
                     first = false;
                 });
             });
@@ -3296,7 +3291,7 @@ namespace QuickBrowser
         }
         static volatile ConcurrentDictionary<string, byte[]> pathToBitmap = new ConcurrentDictionary<string, byte[]>();
         static Webp webp = new Webp("libwebp-x64.dll");
-        
+
         static Bitmap SKBitmapToBitmap(SKBitmap skBitmap)
         {
             var bitmap = new Bitmap(skBitmap.Width, skBitmap.Height, PixelFormat.Format32bppArgb);
@@ -3328,7 +3323,7 @@ namespace QuickBrowser
                 {
                     SKSvg svg = new SKSvg();
                     MemoryStream stream = new MemoryStream(bytes);
-                    var s= svg.Load(stream);
+                    var s = svg.Load(stream);
                     bitmap = SKBitmapToBitmap(s.ToBitmap(SkiaSharp.SKColor.Empty, 1f, 1f, SKColorType.Rgba8888, SKAlphaType.Premul, SkiaSharp.SKColorSpace.CreateSrgb()));
                     stream.Close();
                 }
@@ -4774,9 +4769,7 @@ namespace QuickBrowser
 
             if (_mediaPlayer != null && _mediaPlayer.Time > 0)
             {
-                trackBar2.Minimum = 0;
-                trackBar2.Maximum = (int)_mediaPlayer.Media.Duration;
-                int time = (int)Math.Min(_mediaPlayer.Time, trackBar2.Maximum);
+                int time = (int)((float)_mediaPlayer.Time * 1000f / _mediaPlayer.Media.Duration);
                 trackBar2.Value = time;
             }
 
@@ -4786,8 +4779,8 @@ namespace QuickBrowser
                 {
                     if (_mediaPlayer.Time < 0 && !pause)
                     {
-                        _mediaPlayer.Time = _mediaPlayer.Media.Duration;
-                        progress = (int)_mediaPlayer.Media.Duration;
+                        _mediaPlayer.Time = 1000;
+                        progress = 1000;
                         _mediaPlayer.Pause();
                         timer5.Enabled = reverse;
                     }
@@ -5741,34 +5734,18 @@ namespace QuickBrowser
 
         }
 
-        // 1. 滑鼠按下時：暫停
         private void trackBar2_MouseDown(object sender, MouseEventArgs e)
         {
-            // 取得 TrackBar 控制項
-            var tb = trackBar2;
+            double ratio = (double)(e.X-10) / (trackBar2.Width-20);
+            ratio = Math.Max(0, Math.Min(1, ratio)); // 夾在 0~1 之間
+            trackBar2.Value = progress;
+            progress = (int)(ratio * 1000);
 
-            if (_mediaPlayer.State == VLCState.Playing)
-            {
-                _mediaPlayer.Stop();
-                _mediaPlayer.Play();
-                _mediaPlayer.Time = 0;
-            }
+            _mediaPlayer.Stop();
+            _mediaPlayer.Play();
+            _mediaPlayer.Time = 0;
 
-            // 計算滑桿可用寬度（扣掉左右邊界）
-            int trackWidth = tb.ClientSize.Width;
-
-            int x = e == null ? 0 : e.X;
-            // 將滑鼠點擊位置轉換成比例
-            double ratio = (double)x / trackWidth;
-
-            // 計算對應的 Value
-            int newValue = tb.Minimum + (int)(ratio * (tb.Maximum - tb.Minimum));
-
-            // 設定 Value
-            _mediaPlayer.Time = tb.Value = progress = Math.Max(tb.Minimum, Math.Min(tb.Maximum, newValue));
-
-
-            pause = true;
+            _mediaPlayer.Time = progress * _mediaPlayer.Media.Duration / 1000;
         }
         bool pause;
         // 3. 滑鼠放開時：繼續播放
@@ -5814,7 +5791,7 @@ namespace QuickBrowser
         {
             reverse = !reverse;
             timer5.Enabled = reverse;
-            progress = (int)_mediaPlayer.Time;
+            progress = (int)(_mediaPlayer.Time * 1000 / _mediaPlayer.Media.Duration);
             _mediaPlayer.SetPause(true);
             _mediaPlayer.Play();
 
@@ -5840,9 +5817,9 @@ namespace QuickBrowser
             if (MouseButtons == MouseButtons.Left) return;
             if (progress < 0 && checkBox1.Checked)
             {
-                progress = (int)_mediaPlayer.Media.Duration;
+                progress = 1000;
             }
-            progress -= 100;
+            progress -= 1;
             if (progress < 0)
             {
                 progress = -1;
@@ -5883,12 +5860,9 @@ namespace QuickBrowser
         {
             if (vlcControl1.Visible && _mediaPlayer.Media != null)
             {
-                int newMax = (int)_mediaPlayer.Media.Duration;
-                int newValue = (int)Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration);
-                trackBar2.Maximum = newMax;
-                trackBar2.Minimum = 0;
+                int newValue = (int)(_mediaPlayer.Time * 1000 / _mediaPlayer.Media.Duration);
                 int v = 0;
-                if (newValue <= newMax && (_mediaPlayer.IsPlaying || (_mediaPlayer.State == VLCState.Paused && reverse)))
+                if (newValue <= trackBar2.Maximum && (_mediaPlayer.IsPlaying || (_mediaPlayer.State == VLCState.Paused && reverse)))
                 {
                     if (reverse)
                     {
@@ -5898,9 +5872,9 @@ namespace QuickBrowser
                     {
                         v = (int)(Math.Min(_mediaPlayer.Time, _mediaPlayer.Media.Duration));
                     }
-                    if (v > newMax)
+                    if (v > trackBar2.Maximum)
                     {
-                        v = newMax;
+                        v = trackBar2.Maximum;
                     }
                     if (v < trackBar2.Minimum)
                     {
@@ -5910,7 +5884,7 @@ namespace QuickBrowser
                 }
                 if (_mediaPlayer.State == VLCState.Ended || (reverse && progress <= 0))
                 {
-                    trackBar2.Value = newMax;
+                    trackBar2.Value = trackBar2.Maximum;
                     if (checkBox1.Checked)
                     {
                         if (reverse)
@@ -5983,6 +5957,12 @@ namespace QuickBrowser
         {
             focusing = true;
             Focus();
+        }
+
+        private void trackBar2_Scroll_1(object sender, EventArgs e)
+        {
+
+            pause = true;
         }
 
         int bitmapWidth, bitmapHeight;
