@@ -5,6 +5,9 @@ using FFmpeg.AutoGen;
 using LibVLCSharp.Shared;
 using MediaInfo;
 using Microsoft.VisualBasic.FileIO;
+using ShimSkiaSharp;
+using SkiaSharp;
+using Svg.Skia;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -1326,7 +1329,7 @@ namespace QuickBrowser
             }
         }
         //BMP, GIF, EXIF, JPG, PNG and TIFF
-        readonly HashSet<string> imageFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".gif", ".exif", ".jpg", ".jpeg", ".png", ".tiff", ".jfif",".webp" };
+        readonly HashSet<string> imageFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".gif", ".exif", ".jpg", ".jpeg", ".png", ".tiff", ".jfif", ".webp", ".svg" };
         readonly HashSet<string> videoFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mp4", ".wmv", ".webm", ".mov", ".avi", ".mkv", ".ts", ".mp3", ".wav", ".ogg" };
         readonly HashSet<string> textFormat = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".ini", ".cs", ".xml", ".php", ".log", ".bat", ".ps1" };
         volatile bool loadAllCard = false;
@@ -3293,6 +3296,21 @@ namespace QuickBrowser
         }
         static volatile ConcurrentDictionary<string, byte[]> pathToBitmap = new ConcurrentDictionary<string, byte[]>();
         static Webp webp = new Webp("libwebp-x64.dll");
+        
+        static Bitmap SKBitmapToBitmap(SKBitmap skBitmap)
+        {
+            var bitmap = new Bitmap(skBitmap.Width, skBitmap.Height, PixelFormat.Format32bppArgb);
+            var bitmapData = bitmap.LockBits(
+                new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                ImageLockMode.WriteOnly,
+                PixelFormat.Format32bppArgb);
+
+            // SkiaSharp 是 BGRA，GDI+ 也是 BGRA，直接複製
+            Marshal.Copy(skBitmap.Bytes, 0, bitmapData.Scan0, skBitmap.Bytes.Length);
+
+            bitmap.UnlockBits(bitmapData);
+            return bitmap;
+        }
         Bitmap LoadImagePure(string path)
         {
             byte[] bytes;
@@ -3305,7 +3323,16 @@ namespace QuickBrowser
             if (bytes == null || bytes.Length == 0) return null;
             try
             {
-                if (Path.GetExtension(path).ToLower() == ".webp")
+                string ext = Path.GetExtension(path).ToLower();
+                if (ext == ".svg")
+                {
+                    SKSvg svg = new SKSvg();
+                    MemoryStream stream = new MemoryStream(bytes);
+                    var s= svg.Load(stream);
+                    bitmap = SKBitmapToBitmap(s.ToBitmap(SkiaSharp.SKColor.Empty, 1f, 1f, SKColorType.Rgba8888, SKAlphaType.Premul, SkiaSharp.SKColorSpace.CreateSrgb()));
+                    stream.Close();
+                }
+                else if (ext == ".webp")
                 {
                     MemoryStream stream = new MemoryStream(bytes);
                     bitmap = webp.Decode(stream, new WindowsDecoderOptions());
