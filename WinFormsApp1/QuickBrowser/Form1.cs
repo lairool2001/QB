@@ -3304,6 +3304,7 @@ namespace QuickBrowser
             Marshal.Copy(skBitmap.Bytes, 0, bitmapData.Scan0, skBitmap.Bytes.Length);
 
             bitmap.UnlockBits(bitmapData);
+            skBitmap.Dispose();
             return bitmap;
         }
         Bitmap LoadImagePure(string path)
@@ -3316,18 +3317,19 @@ namespace QuickBrowser
             }
             Bitmap bitmap;
             if (bytes == null || bytes.Length == 0) return null;
+            string ext = Path.GetExtension(path).ToLower();
             try
             {
-                string ext = Path.GetExtension(path).ToLower();
-                if (ext == ".svg")
+                if (ext == ".svg" || IsSvg(bytes))
                 {
                     SKSvg svg = new SKSvg();
                     MemoryStream stream = new MemoryStream(bytes);
                     var s = svg.Load(stream);
                     bitmap = SKBitmapToBitmap(s.ToBitmap(SkiaSharp.SKColor.Empty, 1f, 1f, SKColorType.Rgba8888, SKAlphaType.Premul, SkiaSharp.SKColorSpace.CreateSrgb()));
                     stream.Close();
+                    svg = null;
                 }
-                else if (ext == ".webp")
+                else if (ext == ".webp" || IsWebP(bytes))   // 加上內容判斷
                 {
                     MemoryStream stream = new MemoryStream(bytes);
                     bitmap = webp.Decode(stream, new WindowsDecoderOptions());
@@ -3341,8 +3343,32 @@ namespace QuickBrowser
             }
             catch (Exception ex)
             {
+                var header = bytes.Length >= 8 ? BitConverter.ToString(bytes, 0, 8) : "太短";
+                Console.WriteLine($"[LoadImagePure] 失敗: {path}\n副檔名: {ext}\n檔頭: {header}\n錯誤: {ex.Message}");
                 return null;
             }
+        }
+        private static bool IsWebP(byte[] bytes)
+        {
+            return bytes.Length >= 12
+                && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 // RIFF
+                && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50; // WEBP
+        }
+        private static bool IsSvg(byte[] bytes)
+        {
+            if (bytes.Length < 5) return false;
+
+            // 跳過 UTF-8 BOM (EF BB BF)
+            int offset = 0;
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                offset = 3;
+
+            // 只看開頭一小段,轉成字串來判斷(避免整個檔案都拿去比對,大檔案會慢)
+            int checkLen = Math.Min(200, bytes.Length - offset);
+            string header = Encoding.UTF8.GetString(bytes, offset, checkLen).TrimStart();
+
+            return header.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase)
+                || header.StartsWith("<svg", StringComparison.OrdinalIgnoreCase);
         }
         void setPathImage(string path, Bitmap bitmap)
         {
