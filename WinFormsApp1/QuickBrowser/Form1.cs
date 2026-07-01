@@ -2135,23 +2135,28 @@ namespace QuickBrowser
                 card = new FileDirectoryCard();
                 cardList.Add(card);
             }
+            int a = index;
+            setRichTextBoxDirectoryPathName(card, a, f);
             card.changedTime = dt;
             card.fullPath2 = "";
             card.type = FileDirectoryCard.Type.directory;
-            card.isVideo = card.isImage = false;
             handleCustomizationImage(f, card);
-
+            card.isVideo = card.isImage = false;
             card.loadingDraw = false;
             card.loadImage = () =>
             {
                 lock (card)
                 {
-                    string ff = f;
+                    string smallerImagePath = null;
+                    string path2 = null;
+                    bool isCreateNewThumb;
+
                     card.image = Properties.Resources.Image1;
+
+                    string ff = f;
                     int biggest = 0;
                     string biggestImage = null;
                     (var path, var createTime) = GetFiles(ff);
-
 
                     for (int k = 0; k < path.Length; k++)
                     {
@@ -2172,13 +2177,10 @@ namespace QuickBrowser
                     }
                     if (biggest > 0)
                     {
-                        string smallerImagePath = null;
-                        string path2 = null;
-                        bool isCreateNewThumb;
-                        if (filePathCacheListManager.imagePathToCacheJPGFile.TryGetValue(biggestImage, out var jpeg))
+                        if (filePathCacheListManager.imagePathToCacheJPGFile.TryGetValue(biggestImage, out var jpegX))
                         {
                             //使用已有縮圖
-                            smallerImagePath = path2 = jpeg;
+                            smallerImagePath = path2 = jpegX;
                             isCreateNewThumb = false;
                         }
                         else
@@ -2206,6 +2208,23 @@ namespace QuickBrowser
                     }
                     else
                     {
+                        /*Parallel.For(0, path.Length, i =>
+                        {
+                            var p = path[i];
+                            var x = Path.GetExtension(p);
+                            int w = 0, h = 0;
+                            bool img = imageFormat.Contains(x);
+                            if (img)
+                            {
+                                (w, h) = GetImageSize(p);
+                                int size = w * h;
+                                if (size > biggest)
+                                {
+                                    biggest = size;
+                                    biggestImage = p;
+                                }
+                            }
+                        });*/
                         for (int k = 0; k < path.Length; k++)
                         {
                             var p = path[k];
@@ -2243,8 +2262,6 @@ namespace QuickBrowser
                 form1.Show();
                 form1.go(card.fullPath);
             };
-            int a = index;
-            setRichTextBoxDirectoryPathName(card, a, f);
 
             numToFileDctionaryCard[a] = card;
             return index;
@@ -2656,7 +2673,7 @@ namespace QuickBrowser
                                 if (loadImageCount <= 0)
                                 {
                                     loadImageTime = DateTime.Now.AddMilliseconds(1);
-                                    loadImageCount = 20;
+                                    loadImageCount = 30;
                                 }
                                 drawed.Add(card.fullPath);
                             }
@@ -2755,7 +2772,6 @@ namespace QuickBrowser
                     }
                     if (card.isSelected)
                     {
-
                         //g.FillRectangle(Brushes.LightGray, r);
                         RectangleF rr = r4;
                         //rr.Inflate(new Size(4, 4));
