@@ -5742,6 +5742,11 @@ namespace QuickBrowser
 
         private void pictureBox2_MouseMove(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Left)
+            {
+                pictureBox2.Left+= e.X - oldMousePosX;
+                pictureBox2.Top += e.Y - oldMousePosY;
+            }
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -5778,7 +5783,7 @@ namespace QuickBrowser
 
         private void trackBar2_MouseDown(object sender, MouseEventArgs e)
         {
-            double ratio = (double)(e.X-10) / (trackBar2.Width-20);
+            double ratio = (double)(e.X - 10) / (trackBar2.Width - 20);
             ratio = Math.Max(0, Math.Min(1, ratio)); // 夾在 0~1 之間
             trackBar2.Value = progress;
             progress = (int)(ratio * 1000);
