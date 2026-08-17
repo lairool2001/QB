@@ -2746,8 +2746,9 @@ namespace QuickBrowser
                     }
                     #endregion
 
-                    RectangleF r5 = r4;
-                    r5.Height = 60;
+                    RectangleF r5 = r;
+                    r5.X += r5.Width * 0.1f;
+                    r5.Width *= 0.8f;
                     string indexStr = card.index.ToString();
                     SizeF sizeF = g.MeasureString(indexStr, font2);
                     switch (card.type)
@@ -5746,6 +5747,7 @@ namespace QuickBrowser
             {
                 pictureBox2.Left+= e.X - oldMousePosX;
                 pictureBox2.Top += e.Y - oldMousePosY;
+                Refresh();
             }
         }
 
@@ -5977,7 +5979,7 @@ namespace QuickBrowser
 
         private void Form1_MouseEnter(object sender, EventArgs e)
         {
-            focusing = true;
+            //focusing = true;
         }
 
         private void Form1_MouseLeave(object sender, EventArgs e)
