@@ -308,6 +308,8 @@ namespace QuickBrowser
         {
             exit = true;
 
+            saveAll();
+
             var enumerator = Form1.aliveForms.GetEnumerator();
             while (enumerator.MoveNext())
             {

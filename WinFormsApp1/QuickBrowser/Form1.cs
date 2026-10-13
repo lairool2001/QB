@@ -2029,6 +2029,7 @@ namespace QuickBrowser
             var media = new Media(_libVLC, new Uri(path));
             _mediaPlayer.Play(media);
             _mediaPlayer.Time = 0;
+            trackBar3.Value = _mediaPlayer.Volume = Form1.qbSetting.volume;
             progress = 0;
             timer1.Start();
             reverse = false;
@@ -5745,7 +5746,7 @@ namespace QuickBrowser
         {
             if (e.Button == MouseButtons.Left)
             {
-                pictureBox2.Left+= e.X - oldMousePosX;
+                pictureBox2.Left += e.X - oldMousePosX;
                 pictureBox2.Top += e.Y - oldMousePosY;
                 Refresh();
             }
@@ -6012,6 +6013,14 @@ namespace QuickBrowser
         {
 
             pause = true;
+        }
+
+        private void trackBar3_Scroll(object sender, EventArgs e)
+        {
+            if (_mediaPlayer.Media != null)
+            {
+                Form1.qbSetting.volume = _mediaPlayer.Volume = trackBar3.Value;
+            }
         }
 
         int bitmapWidth, bitmapHeight;

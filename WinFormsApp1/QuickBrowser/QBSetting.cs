@@ -10,5 +10,6 @@ namespace QuickBrowser
         public ConcurrentDictionary<string, int> folderToImageShowType;
         public ConcurrentDictionary<string, string> fileToImage;
         public string home;
+        public int volume;
     }
 }

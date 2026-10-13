@@ -77,6 +77,7 @@ namespace QuickBrowser
             this.comboBox1 = new QuickBrowser.FlatComboBox();
             this.comboBox2 = new QuickBrowser.FlatComboBox();
             this.numericUpDown1 = new QuickBrowser.FlatNumericUpDown();
+            this.trackBar3 = new System.Windows.Forms.TrackBar();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
@@ -84,6 +85,7 @@ namespace QuickBrowser
             ((System.ComponentModel.ISupportInitialize)(this.vlcControl1)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).BeginInit();
             this.SuspendLayout();
             // 
             // backgroundWorker1
@@ -690,6 +692,7 @@ namespace QuickBrowser
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.groupBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(35)))));
+            this.groupBox1.Controls.Add(this.trackBar3);
             this.groupBox1.Controls.Add(this.button22);
             this.groupBox1.Controls.Add(this.button21);
             this.groupBox1.Controls.Add(this.button20);
@@ -792,6 +795,19 @@ namespace QuickBrowser
             0,
             0});
             // 
+            // trackBar3
+            // 
+            this.trackBar3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.trackBar3.LargeChange = 1;
+            this.trackBar3.Location = new System.Drawing.Point(672, 1);
+            this.trackBar3.Margin = new System.Windows.Forms.Padding(0);
+            this.trackBar3.Maximum = 100;
+            this.trackBar3.Name = "trackBar3";
+            this.trackBar3.Size = new System.Drawing.Size(94, 45);
+            this.trackBar3.TabIndex = 49;
+            this.trackBar3.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.trackBar3.Scroll += new System.EventHandler(this.trackBar3_Scroll);
+            // 
             // Form1
             // 
             this.AllowDrop = true;
@@ -872,6 +888,7 @@ namespace QuickBrowser
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1051,5 +1068,6 @@ namespace QuickBrowser
         #endregion
 
         public LibVLCSharp.WinForms.VideoView vlcControl1;
+        private System.Windows.Forms.TrackBar trackBar3;
     }
 }
