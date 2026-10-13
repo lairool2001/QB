@@ -1,0 +1,82 @@
+﻿<Window x:Class="BigPaint.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BigPaint"
+        mc:Ignorable="d"
+        Title="小畫家" Height="700" Width="1000" PreviewKeyDown="Window_PreviewKeyDown">
+    <Window.InputBindings>
+        <KeyBinding Key="O" Modifiers="Control" Command="ApplicationCommands.Open"/>
+        <KeyBinding Key="S" Modifiers="Control" Command="ApplicationCommands.Save"/>
+        <KeyBinding Key="E" Modifiers="Control" Command="{x:Static local:MainWindow.OpenFolderCommand}"/>
+        <KeyBinding Key="Z" Modifiers="Control" Command="ApplicationCommands.Undo"/>
+        <KeyBinding Key="Y" Modifiers="Control" Command="ApplicationCommands.Redo"/>
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Open" Executed="Open_Executed"/>
+        <CommandBinding Command="ApplicationCommands.Save" Executed="Save_Executed"/>
+        <CommandBinding Command="{x:Static local:MainWindow.OpenFolderCommand}" Executed="OpenFolder_Click"/>
+        <CommandBinding Command="ApplicationCommands.Undo" Executed="Undo_Executed"/>
+        <CommandBinding Command="ApplicationCommands.Redo" Executed="Redo_Executed"/>
+    </Window.CommandBindings>
+    <DockPanel>
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <Button Content="開啟檔案" Padding="6,2" Command="ApplicationCommands.Open" ToolTip="Ctrl+O"
+                        ToolBar.OverflowMode="Never"/>
+                <Button Content="貼上" Padding="6,2" Click="Paste_Click" ToolTip="Ctrl+V"
+                        ToolBar.OverflowMode="Never"/>
+                <Button Content="存檔" Padding="6,2" FontWeight="Bold" Command="ApplicationCommands.Save" ToolTip="Ctrl+S"
+                        ToolBar.OverflowMode="Never"/>
+                <Button Content="開啟儲存目錄" Padding="6,2" Click="OpenFolder_Click" ToolTip="Ctrl+E"
+                        ToolBar.OverflowMode="Never"/>
+                <Separator/>
+                <RadioButton x:Name="PenTool" Content="畫筆" IsChecked="True" Padding="6,2" Checked="Tool_Checked"/>
+                <RadioButton x:Name="HighlighterTool" Content="螢光筆" Padding="6,2" Checked="Tool_Checked"/>
+                <RadioButton x:Name="EraserTool" Content="橡皮擦" Padding="6,2" Checked="Tool_Checked"/>
+                <RadioButton x:Name="StrokeEraserTool" Content="刪除筆劃" Padding="6,2" Checked="Tool_Checked"/>
+                <RadioButton x:Name="SelectTool" Content="選取" Padding="6,2" Checked="Tool_Checked"/>
+                <Separator/>
+                <TextBlock Text="粗細" VerticalAlignment="Center" Margin="4,0"/>
+                <Slider x:Name="SizeSlider" Width="120" Minimum="1" Maximum="60" Value="4"
+                        VerticalAlignment="Center" ValueChanged="SizeSlider_ValueChanged"/>
+                <TextBlock x:Name="SizeText" Width="26" VerticalAlignment="Center" Margin="4,0"/>
+                <Separator/>
+                <ItemsControl x:Name="Palette" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="22" Height="22" Margin="1" Click="Color_Click" Tag="{Binding}"
+                                    BorderBrush="Gray" ToolTip="{Binding}">
+                                <Button.Background>
+                                    <SolidColorBrush Color="{Binding}"/>
+                                </Button.Background>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border x:Name="CurrentColor" Width="30" Height="22" Margin="6,0" BorderBrush="Black"
+                        BorderThickness="1" ToolTip="目前顏色"/>
+                <Separator/>
+                <Button Content="復原" Padding="6,2" Command="ApplicationCommands.Undo" ToolTip="Ctrl+Z"/>
+                <Button Content="重做" Padding="6,2" Command="ApplicationCommands.Redo" ToolTip="Ctrl+Y"/>
+                <Button Content="清除" Padding="6,2" Click="Clear_Click"/>
+
+            </ToolBar>
+        </ToolBarTray>
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock x:Name="StatusText" Text="就緒"/>
+        </StatusBar>
+        <ScrollViewer x:Name="Scroller" SizeChanged="Scroller_SizeChanged" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="LightGray">
+            <Grid x:Name="Paper" Background="White" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Image x:Name="BackImage" Stretch="Fill" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <InkCanvas x:Name="Canvas" Background="Transparent"/>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
