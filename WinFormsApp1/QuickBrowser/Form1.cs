@@ -461,7 +461,9 @@ namespace QuickBrowser
                 // 連續滾動時累加在目標上（不從目前位置重算），快速滾輪才不會「卡住」；最多領先三格
                 float stepY = (picH + 50) * Math.Sign(delta);
                 float lead = Math.Abs(stepY) * 3;
-                float next = targetScrollY + stepY;
+                // 從「去掉阻尼」的位置累加，超出邊界的部分再套阻尼
+                float next = rubberBand(Math.Max(scrollBottomLimit, Math.Min(scrollTopLimit, targetScrollY)) + stepY);
+                markScrollInput();
                 targetScrollY = Math.Max(scrollY - lead, Math.Min(scrollY + lead, next));
             }
 
@@ -569,6 +571,53 @@ namespace QuickBrowser
         uint oldIndex;
         // 捲動緩動的時間常數（秒）：越小越跟手
         const double scrollEaseSeconds = 0.045;
+        // 回彈時用較柔的緩動
+        const double scrollBounceSeconds = 0.09;
+        // 超出邊界最多能拉多遠（像素）
+        const float scrollMaxOverscroll = 140f;
+        // 使用者最後一次捲動輸入（Stopwatch 時間戳）；只有使用者捲動造成的超出才回彈，
+        // 程式跳轉（返回時還原位置、goto）時清單可能還在載入，不去夾它
+        long lastScrollInput;
+        volatile bool scrollBouncing;
+
+        float scrollTopLimit => startTargetScrollY;
+        float scrollBottomLimit => Math.Min(startTargetScrollY, -getScrollHeight());
+
+        /// <summary>超出邊界的部分加上阻尼：越拉越緊，最多 scrollMaxOverscroll。</summary>
+        float rubberBand(float y)
+        {
+            float top = scrollTopLimit, bottom = scrollBottomLimit;
+            float over = y > top ? y - top : y < bottom ? y - bottom : 0f;
+            if (over == 0f) return y;
+            float limit = over > 0 ? top : bottom;
+            float eased = scrollMaxOverscroll * (1f - (float)Math.Exp(-Math.Abs(over) / (scrollMaxOverscroll * 2f)));
+            return limit + Math.Sign(over) * eased;
+        }
+
+        /// <summary>視窗大小改變後：重排檔案區、重建點陣圖，並讓捲動位置回到新的上下限之內。</summary>
+        void syncLayoutAfterResize()
+        {
+            if (WindowState == FormWindowState.Minimized || pictureBoxWidthLess == 0) return;
+            if (pictureBox1.Dock != DockStyle.Fill)
+            {
+                pictureBox1.Width = Width - pictureBoxWidthLess;
+                pictureBox1.Height = ClientRectangle.Height - HeightMinus;
+            }
+            // 沒有 ResizeEnd 的情況（最大化、還原、程式調整大小）也要解除 resizing，否則之後的縮放都不會更新
+            resizing = false;
+            oldWidth = Width;
+            oldHeight = Height;
+            resetPictureBoxMain();
+            float clamped = Math.Max(scrollBottomLimit, Math.Min(scrollTopLimit, targetScrollY));
+            if (clamped != targetScrollY) targetScrollY = scrollY = clamped;
+            setToDraw();
+        }
+
+        void markScrollInput()
+        {
+            lastScrollInput = Stopwatch.GetTimestamp();
+            scrollBouncing = false;
+        }
 
         private void insideMove()
         {
@@ -586,6 +635,20 @@ namespace QuickBrowser
                 last = now;
 
                 float target = targetScrollY;
+
+                // 停止捲動輸入後，超出邊界就彈回
+                double inputAge = (Stopwatch.GetTimestamp() - lastScrollInput) / (double)Stopwatch.Frequency;
+                if (!stopScroll && !loadingDraw && lastScrollInput != 0 && inputAge > 0.09 && inputAge < 5)
+                {
+                    float top = scrollTopLimit, bottom = scrollBottomLimit;
+                    float clamped = Math.Max(bottom, Math.Min(top, target));
+                    if (clamped != target || scrollY > top || scrollY < bottom)
+                    {
+                        if (clamped != target) targetScrollY = target = clamped;
+                        scrollBouncing = true;
+                    }
+                }
+
                 if (stopScroll)
                 {
 
@@ -594,10 +657,12 @@ namespace QuickBrowser
                 {
                     // 依實際經過時間做指數緩動：不受 Sleep 精度影響，速度穩定、收尾柔順
                     float diff = target - scrollY;
-                    float step = (float)(diff * (1 - Math.Exp(-dt / scrollEaseSeconds)));
+                    double tau = scrollBouncing ? scrollBounceSeconds : scrollEaseSeconds;
+                    float step = (float)(diff * (1 - Math.Exp(-dt / tau)));
                     if (Math.Abs(diff) < 0.5f || Math.Abs(step) >= Math.Abs(diff))
                     {
                         scrollY = target;
+                        scrollBouncing = false;
                     }
                     else
                     {
@@ -2888,7 +2953,7 @@ namespace QuickBrowser
             }
 
             float scrollHeight = getScrollHeight();
-            if (scrollHeight >= bitmapHeight)
+            if (scrollHeight > 1)
             {
                 drawRightScrollBar(g, scrollHeight);
             }
@@ -3053,12 +3118,93 @@ namespace QuickBrowser
             }
         }
 
+        // 篩選後實際會顯示的卡片數；篩選字串比對較貴，只在清單數量或篩選條件改變時重算
+        int layoutCountCacheTotal = -1;
+        string layoutCountCacheFilter;
+        bool layoutCountCacheGlobal;
+        int layoutCountCacheValue;
+
+        int countLayoutCards()
+        {
+            var list = cardList;
+            int total = list.Count;
+            string filter = filterWord;
+            if (total == layoutCountCacheTotal && filter == layoutCountCacheFilter && global == layoutCountCacheGlobal)
+                return layoutCountCacheValue;
+
+            int count = 0;
+            var words = filterWordz;
+            try
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    var card = list[i];
+                    if (card == null || card.index == -1) continue;
+                    // 與 insideDraw 的篩選條件相同
+                    if (!string.IsNullOrEmpty(filter) && card.fileName != null && !global)
+                    {
+                        bool jump = false;
+                        for (int j = 0; j < words.Length; j++)
+                            jump |= card.fileName.IndexOf(words[j], StringComparison.OrdinalIgnoreCase) == -1;
+                        if (jump) continue;
+                    }
+                    count++;
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // 清單在其他執行緒載入中被改動，沿用上次結果
+                return Math.Max(layoutCountCacheValue, 0);
+            }
+
+            layoutCountCacheTotal = total;
+            layoutCountCacheFilter = filter;
+            layoutCountCacheGlobal = global;
+            layoutCountCacheValue = count;
+            return count;
+        }
+
+        /// <summary>
+        /// 可捲動的最大距離（scrollY 最小可到 -此值）。依 insideDraw 的實際排版計算：
+        /// 欄數、列高、間距、padding 都相同，捲到底時最後一列剛好完整顯示在畫面底部。
+        /// 內容不足一頁時回傳 1。
+        /// </summary>
+        /// <summary>依 insideDraw 的排版規則算出：每列幾張、列距、卡片高、上方 padding。</summary>
+        bool getLayoutMetrics(out int columns, out int rowStep, out int cardH, out int pad)
+        {
+            columns = 1; rowStep = 1; pad = 0;
+            int cardW = (int)((picW + 10) * scale);
+            cardH = (int)((picH + 30 + 15) * scale);
+            if (cardW <= 0 || cardH <= 0 || bitmapWidth <= 0 || bitmapHeight <= 0) return false;
+
+            pad = ((bitmapWidth - 45) % cardW) / 2;
+            float x0 = pad + (comboBox1IndexThreadSafe == 1 ? backgroundRect.X : 0);
+            float right = blockRight;
+
+            // 換行條件與 insideDraw 相同：放完一張後 r.X += 寬 + 5，若 r.X + 寬 + 5 >= blockRight 就換列
+            float x = x0 + cardW + 5;
+            while (x + cardW + 5 < right && columns < 1000)
+            {
+                columns++;
+                x += cardW + 5;
+            }
+            rowStep = cardH + 5 + (isDisk ? 5 : 0);
+            return true;
+        }
+
         private float getScrollHeight()
         {
-            int ww = (bitmapWidth / ((int)((picW + 10) * scale) + 5));
-            float hh = ((float)cardList.Count / ww) - 2;
-            //return Math.Max(1, (hh * (int)(picH + wordBoxHeight + 15 + moreHeightSpace)));
-            return Math.Max(1, (hh * (int)(picH + 30 + 15 + 5)));
+            if (!getLayoutMetrics(out int columns, out int rowStep, out int cardH, out int pad)) return 1;
+
+            int count = countLayoutCards();
+            if (count <= 0) return 1;
+            int rows = (count + columns - 1) / columns;
+
+            // 第一列頂端 = scrollY + pad；最後一列底端 = scrollY + pad + (rows - 1) * rowStep + cardH
+            const int bottomMargin = 20;
+            float contentBottom = pad + (rows - 1) * rowStep + cardH;
+            float maxScroll = contentBottom - (bitmapHeight - bottomMargin);
+            return Math.Max(1, maxScroll);
         }
 
         private void drawBackground(Graphics g)
@@ -3746,14 +3892,16 @@ namespace QuickBrowser
                     break;
                 case Keys.Up:
                     //setColor(false);
-                    targetScrollY = scrollY + 100;
+                    markScrollInput();
+                    targetScrollY = rubberBand(scrollY + 100);
                     //setColor(true);
                     setToDraw();
                     //flowLayoutPanel1.ScrollControlIntoView(flowLayoutPanel1.Controls[scrollY]);
                     break;
                 case Keys.Down:
                     //setColor(false);
-                    targetScrollY = scrollY - 100;
+                    markScrollInput();
+                    targetScrollY = rubberBand(scrollY - 100);
                     setToDraw();
                     //setColor(true);
                     //flowLayoutPanel1.ScrollControlIntoView(flowLayoutPanel1.Controls[selectIndex]);
@@ -4160,7 +4308,7 @@ namespace QuickBrowser
         // 右側捲軸的可點範圍：軌道畫在 x = blockRight-20、y = 20 ~ bitmapHeight-20，左右各放寬一點好點
         bool hitRightScrollBar(Point p)
         {
-            if (getScrollHeight() < bitmapHeight) return false;   // 內容不足一頁時不畫捲軸
+            if (getScrollHeight() <= 1) return false;   // 內容不足一頁時不畫捲軸
             var rectangle = new RectangleF(blockRight - 20 - 16, 10, 32, bitmapHeight - 20);
             return rectangle.Contains(p);
         }
@@ -4168,7 +4316,7 @@ namespace QuickBrowser
         void jumpRightScrollBar(int y)
         {
             float ratio = Math.Max(0f, Math.Min(1f, (y - 20f) / (bitmapHeight - 40)));
-            targetScrollY = scrollY = -ratio * getScrollHeight();
+            targetScrollY = scrollY = Math.Max(scrollBottomLimit, Math.Min(scrollTopLimit, -ratio * getScrollHeight()));
             setToDraw();
         }
 
@@ -6126,25 +6274,57 @@ namespace QuickBrowser
 
         bool resetingGraphic;
         bool triggerNoSelectGoTo;
+        // 縮放時保留閱讀位置用的錨點（第幾張卡片在頂端、捲進那一列的比例）
+        float relayoutAnchorOrdinal, relayoutAnchorFraction;
+        float relayoutResultY = float.NaN;
+
         private void resetPictureBoxMain()
         {
             //targetScrollY = scrollY = 0;
             if (bitmapWidth == pictureBox1.Width && bitmapHeight == pictureBox1.Height) return;
             if (pictureBox1.Width == 0 || pictureBox1.Height == 0) return;
-            setGoodBitmapAndResetGraphic();
-            if (!pictureBox2.Visible)
+
+            // 保留閱讀位置：記下「畫面頂端是第幾張、捲進那一列多少」，重排後把同一張放回頂端。
+            // （原本用 recoredFirstIndex 跳轉，它記的是上一列的卡片，每次縮放都會往回飄一兩列）
+            bool hasOldLayout = getLayoutMetrics(out int oldColumns, out int oldStep, out _, out _);
+            bool keepPosition = !pictureBox2.Visible && hasOldLayout;
+            float topOrdinal = 0, rowFraction = 0;
+            if (keepPosition)
             {
-                triggerNoSelectGoTo = true;
-                selecteGoto = false;
-                gotoIndex = recoredFirstIndex;
-                setToDraw();
+                if (targetScrollY == relayoutResultY)
+                {
+                    // 上次重排後使用者沒有捲動：沿用最初的錨點，連續最大化/還原才會回到完全相同的位置
+                    topOrdinal = relayoutAnchorOrdinal;
+                    rowFraction = relayoutAnchorFraction;
+                }
+                else
+                {
+                    float rowF = Math.Max(0f, (startTargetScrollY - targetScrollY) / oldStep);
+                    int row = (int)rowF;
+                    rowFraction = rowF - row;
+                    topOrdinal = row * oldColumns;
+                    relayoutAnchorOrdinal = topOrdinal;
+                    relayoutAnchorFraction = rowFraction;
+                }
             }
-            //targetScrollY = scrollY = y;
+
+            setGoodBitmapAndResetGraphic();
 
             drawPanel.Dock = pictureBox1.Dock;
             drawPanel.SetBounds(pictureBox1.Bounds.Left, pictureBox1.Bounds.Top, pictureBox1.Bounds.Width, pictureBox1.Bounds.Height);
             workWidth = pictureBox1.Bounds.Width;
             workHeight = pictureBox1.Bounds.Height;
+
+            if (keepPosition && getLayoutMetrics(out int newColumns, out int newStep, out _, out _))
+            {
+                int newRow = (int)(topOrdinal / newColumns);
+                float y = startTargetScrollY - (newRow + rowFraction) * newStep;
+                // 視窗變大時原位置可能超出新的下限
+                y = Math.Max(scrollBottomLimit, Math.Min(scrollTopLimit, y));
+                targetScrollY = scrollY = y;
+                relayoutResultY = y;
+            }
+            setToDraw();
 
             newGraphic();
         }

@@ -169,7 +169,8 @@ namespace QuickBrowser
             switch (m.Msg)
             {
                 case WM_SYSCOMMAND:
-                    _inSysCommand = true;
+                    // 只有「還原」需要事後修正尺寸；拖曳縮放(SC_SIZE)、移動(SC_MOVE) 也是 WM_SYSCOMMAND，不能動
+                    _inSysCommand = (m.WParam.ToInt64() & 0xFFF0) == SC_RESTORE;
                     return false;
 
                 case WM_NCCALCSIZE:
@@ -236,6 +237,7 @@ namespace QuickBrowser
         {
             if (m.Msg == WM_SYSCOMMAND)
             {
+                if (!_inSysCommand) return;
                 _inSysCommand = false;
                 // Form.RestoreWindowBoundsIfNecessary 用內部公式（含系統標題列）把 ClientSize 換回視窗大小，
                 // 每次還原都會長高一個標題列；在它跑完之後套回記住的一般大小

@@ -14,6 +14,8 @@ namespace QuickBrowser
     public partial class Form1
     {
         WindowChrome chrome;
+        // 拖曳縮放時約 30ms 同步一次，避免每個 SizeChanged 都重建點陣圖
+        readonly Timer liveResizeTimer = new Timer { Interval = 30 };
 
         /// <summary>內容區頂端（標題列下緣）；無邊框全螢幕時為 0。</summary>
         int chromeTop => chrome?.ContentTop ?? 0;
@@ -47,6 +49,13 @@ namespace QuickBrowser
             {
                 SizeChanged += Form1_SizeChanged;
                 Resize += Form1_Resize;
+                // 視窗大小改變時即時同步檔案區（原本只在拖曳結束 ResizeEnd 才更新，最大化/還原時甚至不會更新）
+                SizeChanged += (s2, e2) => { if (!liveResizeTimer.Enabled) liveResizeTimer.Start(); };
+            };
+            liveResizeTimer.Tick += (s, e) =>
+            {
+                liveResizeTimer.Stop();
+                syncLayoutAfterResize();
             };
 
             Func<Color> field = () => Theme.Field;
