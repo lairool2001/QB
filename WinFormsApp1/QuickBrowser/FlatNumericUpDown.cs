@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -9,10 +9,9 @@ namespace QuickBrowser
     public class FlatNumericUpDown : NumericUpDown
     {
         // ── 主題色（與 FlatComboBox 一致）──────────────────
-        static readonly Color BgColor    = Color.FromArgb(42, 42, 60);
-        static readonly Color BgHover    = Color.FromArgb(55, 55, 78);
-        static readonly Color TextColor  = Color.FromArgb(210, 210, 235);
-        static readonly Color ArrowColor = Color.FromArgb(150, 150, 190);
+        static readonly Color BgColor    = Theme.Field;
+        static readonly Color TextColor  = Theme.Text;
+        static readonly Color ArrowColor = Theme.TextMuted;
         // ────────────────────────────────────────────────────
 
         const int GWL_STYLE        = -16;
@@ -121,7 +120,7 @@ namespace QuickBrowser
                     g.FillRectangle(b, 0, 0, w, h);
 
                 // 分隔線（上下區段之間）
-                using (var p = new Pen(Color.FromArgb(60, 60, 85)))
+                using (var p = new Pen(Theme.FieldBorder))
                     g.DrawLine(p, 0, half, w, half);
 
                 // ▲ 上箭頭
@@ -142,8 +141,8 @@ namespace QuickBrowser
                                new PointF(cx + hw, cy - hh),
                                new PointF(cx,      cy + hh) };
 
-                var b = new SolidBrush(ArrowColor);
-                g.FillPolygon(b, pts);
+                using (var b = new SolidBrush(ArrowColor))
+                    g.FillPolygon(b, pts);
             }
         }
     }

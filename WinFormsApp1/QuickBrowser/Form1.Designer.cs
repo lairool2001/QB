@@ -42,42 +42,42 @@ namespace QuickBrowser
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button11 = new System.Windows.Forms.Button();
-            this.button12 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
-            this.button6 = new System.Windows.Forms.Button();
-            this.button7 = new System.Windows.Forms.Button();
-            this.button8 = new System.Windows.Forms.Button();
-            this.button9 = new System.Windows.Forms.Button();
-            this.button10 = new System.Windows.Forms.Button();
-            this.button13 = new System.Windows.Forms.Button();
-            this.button14 = new System.Windows.Forms.Button();
-            this.button15 = new System.Windows.Forms.Button();
-            this.button16 = new System.Windows.Forms.Button();
-            this.button17 = new System.Windows.Forms.Button();
-            this.button18 = new System.Windows.Forms.Button();
-            this.button19 = new System.Windows.Forms.Button();
-            this.button20 = new System.Windows.Forms.Button();
-            this.button21 = new System.Windows.Forms.Button();
-            this.button22 = new System.Windows.Forms.Button();
+            this.button1 = new QuickBrowser.ModernButton();
+            this.button2 = new QuickBrowser.ModernButton();
+            this.button11 = new QuickBrowser.ModernButton();
+            this.button12 = new QuickBrowser.ModernButton();
+            this.button3 = new QuickBrowser.ModernButton();
+            this.button4 = new QuickBrowser.ModernButton();
+            this.button5 = new QuickBrowser.ModernButton();
+            this.button6 = new QuickBrowser.ModernButton();
+            this.button7 = new QuickBrowser.ModernButton();
+            this.button8 = new QuickBrowser.ModernButton();
+            this.button9 = new QuickBrowser.ModernButton();
+            this.button10 = new QuickBrowser.ModernButton();
+            this.button13 = new QuickBrowser.ModernButton();
+            this.button14 = new QuickBrowser.ModernButton();
+            this.button15 = new QuickBrowser.ModernButton();
+            this.button16 = new QuickBrowser.ModernButton();
+            this.button17 = new QuickBrowser.ModernButton();
+            this.button18 = new QuickBrowser.ModernButton();
+            this.button19 = new QuickBrowser.ModernButton();
+            this.button20 = new QuickBrowser.ModernButton();
+            this.button21 = new QuickBrowser.ModernButton();
+            this.button22 = new QuickBrowser.ModernButton();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.trackBar1 = new System.Windows.Forms.TrackBar();
-            this.trackBar2 = new System.Windows.Forms.TrackBar();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.trackBar1 = new QuickBrowser.FlatTrackBar();
+            this.trackBar2 = new QuickBrowser.FlatTrackBar();
+            this.checkBox1 = new QuickBrowser.ToggleSwitch();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer5 = new System.Windows.Forms.Timer(this.components);
             this.vlcControl1 = new LibVLCSharp.WinForms.VideoView();
-            this.groupBox1 = new System.Windows.Forms.Panel();
+            this.groupBox1 = new QuickBrowser.MediaBar();
             this.richTextBox1 = new QuickBrowser.AlphaRichTextBox();
             this.comboBox1 = new QuickBrowser.FlatComboBox();
             this.comboBox2 = new QuickBrowser.FlatComboBox();
             this.numericUpDown1 = new QuickBrowser.FlatNumericUpDown();
-            this.trackBar3 = new System.Windows.Forms.TrackBar();
+            this.trackBar3 = new QuickBrowser.FlatTrackBar();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
@@ -95,14 +95,15 @@ namespace QuickBrowser
             // richTextBox2
             // 
             this.richTextBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.richTextBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox2.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(230)))));
+            this.richTextBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
             this.richTextBox2.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.richTextBox2.Location = new System.Drawing.Point(761, 16);
+            this.richTextBox2.Location = new System.Drawing.Point(746, 50);
             this.richTextBox2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(106, 52);
+            this.richTextBox2.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            this.richTextBox2.Size = new System.Drawing.Size(68, 54);
             this.richTextBox2.TabIndex = 0;
             this.richTextBox2.Text = "";
             this.richTextBox2.TextChanged += new System.EventHandler(this.richTextBox2_TextChanged);
@@ -113,13 +114,14 @@ namespace QuickBrowser
             // 
             this.richTextBox3.AccessibleDescription = "";
             this.richTextBox3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.richTextBox3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox3.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(230)))));
-            this.richTextBox3.Location = new System.Drawing.Point(761, 80);
+            this.richTextBox3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.richTextBox3.Location = new System.Drawing.Point(770, 129);
             this.richTextBox3.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox3.Name = "richTextBox3";
-            this.richTextBox3.Size = new System.Drawing.Size(275, 57);
+            this.richTextBox3.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            this.richTextBox3.Size = new System.Drawing.Size(246, 30);
             this.richTextBox3.TabIndex = 7;
             this.richTextBox3.TabStop = false;
             this.richTextBox3.Text = "";
@@ -128,14 +130,15 @@ namespace QuickBrowser
             // richTextBox4
             // 
             this.richTextBox4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(48)))));
+            this.richTextBox4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(50)))));
             this.richTextBox4.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(170)))), ((int)(((byte)(170)))), ((int)(((byte)(200)))));
-            this.richTextBox4.Location = new System.Drawing.Point(760, 147);
+            this.richTextBox4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(160)))), ((int)(((byte)(192)))));
+            this.richTextBox4.Location = new System.Drawing.Point(770, 178);
             this.richTextBox4.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox4.Name = "richTextBox4";
+            this.richTextBox4.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
             this.richTextBox4.ReadOnly = true;
-            this.richTextBox4.Size = new System.Drawing.Size(275, 57);
+            this.richTextBox4.Size = new System.Drawing.Size(246, 44);
             this.richTextBox4.TabIndex = 9;
             this.richTextBox4.TabStop = false;
             this.richTextBox4.Text = "";
@@ -143,14 +146,14 @@ namespace QuickBrowser
             // richTextBox5
             // 
             this.richTextBox5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.richTextBox5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox5.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(230)))));
-            this.richTextBox5.Location = new System.Drawing.Point(760, 706);
+            this.richTextBox5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.richTextBox5.Location = new System.Drawing.Point(770, 785);
             this.richTextBox5.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox5.Multiline = false;
             this.richTextBox5.Name = "richTextBox5";
-            this.richTextBox5.Size = new System.Drawing.Size(271, 60);
+            this.richTextBox5.Size = new System.Drawing.Size(246, 22);
             this.richTextBox5.TabIndex = 12;
             this.richTextBox5.Text = "";
             this.richTextBox5.TextChanged += new System.EventHandler(this.richTextBox5_TextChanged);
@@ -159,13 +162,14 @@ namespace QuickBrowser
             // richTextBox6
             // 
             this.richTextBox6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.richTextBox6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox6.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(230)))));
-            this.richTextBox6.Location = new System.Drawing.Point(762, 481);
+            this.richTextBox6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.richTextBox6.Location = new System.Drawing.Point(770, 583);
             this.richTextBox6.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox6.Name = "richTextBox6";
-            this.richTextBox6.Size = new System.Drawing.Size(274, 63);
+            this.richTextBox6.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            this.richTextBox6.Size = new System.Drawing.Size(246, 34);
             this.richTextBox6.TabIndex = 15;
             this.richTextBox6.TabStop = false;
             this.richTextBox6.Text = "";
@@ -173,13 +177,14 @@ namespace QuickBrowser
             // richTextBox7
             // 
             this.richTextBox7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.richTextBox7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox7.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(230)))));
-            this.richTextBox7.Location = new System.Drawing.Point(762, 582);
+            this.richTextBox7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.richTextBox7.Location = new System.Drawing.Point(770, 685);
             this.richTextBox7.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.richTextBox7.Name = "richTextBox7";
-            this.richTextBox7.Size = new System.Drawing.Size(274, 63);
+            this.richTextBox7.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            this.richTextBox7.Size = new System.Drawing.Size(246, 30);
             this.richTextBox7.TabIndex = 18;
             this.richTextBox7.TabStop = false;
             this.richTextBox7.Text = "";
@@ -205,8 +210,8 @@ namespace QuickBrowser
             this.label1.AutoSize = true;
             this.label1.BackColor = System.Drawing.Color.Transparent;
             this.label1.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(140)))), ((int)(((byte)(140)))), ((int)(((byte)(180)))));
-            this.label1.Location = new System.Drawing.Point(770, 40);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(112)))), ((int)(((byte)(146)))));
+            this.label1.Location = new System.Drawing.Point(751, 82);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(42, 16);
@@ -216,13 +221,13 @@ namespace QuickBrowser
             // label2
             // 
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.label2.AutoSize = true;
+            this.label2.AutoSize = false;
             this.label2.BackColor = System.Drawing.Color.Transparent;
-            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(140)))), ((int)(((byte)(140)))), ((int)(((byte)(180)))));
-            this.label2.Location = new System.Drawing.Point(760, 213);
+            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(160)))), ((int)(((byte)(192)))));
+            this.label2.Location = new System.Drawing.Point(738, 234);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(42, 16);
+            this.label2.Size = new System.Drawing.Size(288, 36);
             this.label2.TabIndex = 8;
             this.label2.Text = "label2";
             this.label2.Click += new System.EventHandler(this.label2_Click);
@@ -232,9 +237,9 @@ namespace QuickBrowser
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.BackColor = System.Drawing.Color.Transparent;
-            this.label3.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(140)))), ((int)(((byte)(140)))), ((int)(((byte)(180)))));
-            this.label3.Location = new System.Drawing.Point(813, 19);
+            this.label3.Font = new System.Drawing.Font("微軟正黑體", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.label3.Location = new System.Drawing.Point(750, 54);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(42, 16);
@@ -255,336 +260,265 @@ namespace QuickBrowser
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button1.Location = new System.Drawing.Point(874, 13);
-            this.button1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button1.Location = new System.Drawing.Point(828, 44);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(63, 24);
+            this.button1.Glyph = QuickBrowser.Theme.Glyph.Back;
+            this.button1.Size = new System.Drawing.Size(96, 30);
             this.button1.TabIndex = 3;
             this.button1.TabStop = false;
-            this.button1.Text = "◀ back";
-            this.button1.UseVisualStyleBackColor = false;
+            this.button1.Text = "Back";
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // button2
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button2.Location = new System.Drawing.Point(875, 44);
-            this.button2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button2.Location = new System.Drawing.Point(828, 80);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(62, 27);
+            this.button2.Glyph = QuickBrowser.Theme.Glyph.History;
+            this.button2.Size = new System.Drawing.Size(96, 30);
             this.button2.TabIndex = 4;
             this.button2.TabStop = false;
-            this.button2.Text = "older";
-            this.button2.UseVisualStyleBackColor = false;
+            this.button2.Text = "Older";
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button11
             // 
             this.button11.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button11.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button11.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button11.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button11.Location = new System.Drawing.Point(943, 45);
-            this.button11.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button11.Location = new System.Drawing.Point(930, 80);
             this.button11.Name = "button11";
-            this.button11.Size = new System.Drawing.Size(62, 24);
+            this.button11.Glyph = QuickBrowser.Theme.Glyph.Redo;
+            this.button11.Size = new System.Drawing.Size(96, 30);
             this.button11.TabIndex = 29;
             this.button11.TabStop = false;
-            this.button11.Text = "re-older";
-            this.button11.UseVisualStyleBackColor = false;
+            this.button11.Text = "Re-older";
             this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
             // button12
             // 
             this.button12.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button12.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button12.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button12.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button12.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button12.Location = new System.Drawing.Point(941, 13);
-            this.button12.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button12.Location = new System.Drawing.Point(930, 44);
             this.button12.Name = "button12";
-            this.button12.Size = new System.Drawing.Size(63, 24);
+            this.button12.Glyph = QuickBrowser.Theme.Glyph.Forward;
+            this.button12.Size = new System.Drawing.Size(96, 30);
             this.button12.TabIndex = 30;
             this.button12.TabStop = false;
-            this.button12.Text = "forward ▶";
-            this.button12.UseVisualStyleBackColor = false;
+            this.button12.Text = "Forward";
             this.button12.Click += new System.EventHandler(this.button12_Click);
             // 
             // button3
             // 
             this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button3.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button3.Location = new System.Drawing.Point(665, 16);
-            this.button3.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button3.Location = new System.Drawing.Point(602, 12);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(88, 53);
+            this.button3.Glyph = QuickBrowser.Theme.Glyph.Copy;
+            this.button3.Size = new System.Drawing.Size(112, 48);
             this.button3.TabIndex = 5;
             this.button3.TabStop = false;
             this.button3.Text = "Copy Path";
-            this.button3.UseVisualStyleBackColor = false;
             this.button3.MouseDown += new System.Windows.Forms.MouseEventHandler(this.button3_MouseDown);
             // 
             // button4
             // 
             this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button4.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button4.Location = new System.Drawing.Point(948, 213);
-            this.button4.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button4.Location = new System.Drawing.Point(738, 276);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(88, 53);
+            this.button4.Glyph = QuickBrowser.Theme.Glyph.Copy;
+            this.button4.Size = new System.Drawing.Size(112, 30);
             this.button4.TabIndex = 10;
             this.button4.TabStop = false;
             this.button4.Text = "Copy Path";
-            this.button4.UseVisualStyleBackColor = false;
             this.button4.MouseDown += new System.Windows.Forms.MouseEventHandler(this.button4_MouseDown);
             // 
             // button5
             // 
             this.button5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(78)))), ((int)(((byte)(40)))), ((int)(((byte)(45)))));
-            this.button5.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(60)))), ((int)(((byte)(65)))));
-            this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.button5.Location = new System.Drawing.Point(947, 267);
-            this.button5.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button5.Location = new System.Drawing.Point(828, 312);
             this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(88, 31);
+            this.button5.Kind = QuickBrowser.ButtonKind.Danger;
+            this.button5.Glyph = QuickBrowser.Theme.Glyph.Delete;
+            this.button5.Size = new System.Drawing.Size(198, 30);
             this.button5.TabIndex = 11;
             this.button5.TabStop = false;
-            this.button5.Text = "🗑 Delete";
-            this.button5.UseVisualStyleBackColor = false;
+            this.button5.Text = "Delete";
             this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // button6
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(65)))), ((int)(((byte)(55)))));
-            this.button6.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(110)))), ((int)(((byte)(85)))));
-            this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(235)))), ((int)(((byte)(210)))));
-            this.button6.Location = new System.Drawing.Point(760, 656);
-            this.button6.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button6.Location = new System.Drawing.Point(738, 734);
             this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(147, 41);
+            this.button6.Hint = "Ctrl+J";
+            this.button6.Kind = QuickBrowser.ButtonKind.Success;
+            this.button6.Glyph = QuickBrowser.Theme.Glyph.Folder;
+            this.button6.Size = new System.Drawing.Size(180, 30);
             this.button6.TabIndex = 13;
             this.button6.TabStop = false;
-            this.button6.Text = "Just Folder [Ctrl+J]";
-            this.button6.UseVisualStyleBackColor = false;
+            this.button6.Text = "Just Folder";
             this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
             // button7
             // 
             this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button7.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button7.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button7.Location = new System.Drawing.Point(762, 442);
-            this.button7.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button7.Location = new System.Drawing.Point(738, 534);
             this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(88, 31);
+            this.button7.Glyph = QuickBrowser.Theme.Glyph.Copy;
+            this.button7.Size = new System.Drawing.Size(98, 30);
             this.button7.TabIndex = 16;
             this.button7.TabStop = false;
             this.button7.Text = "Copy To";
-            this.button7.UseVisualStyleBackColor = false;
             this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // button8
             // 
             this.button8.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button8.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button8.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button8.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button8.Location = new System.Drawing.Point(852, 442);
-            this.button8.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button8.Location = new System.Drawing.Point(842, 534);
             this.button8.Name = "button8";
-            this.button8.Size = new System.Drawing.Size(88, 31);
+            this.button8.Glyph = QuickBrowser.Theme.Glyph.Move;
+            this.button8.Size = new System.Drawing.Size(100, 30);
             this.button8.TabIndex = 17;
             this.button8.TabStop = false;
             this.button8.Text = "Move To";
-            this.button8.UseVisualStyleBackColor = false;
             this.button8.Click += new System.EventHandler(this.button8_Click);
             // 
             // button9
             // 
             this.button9.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(65)))), ((int)(((byte)(78)))));
-            this.button9.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(65)))), ((int)(((byte)(100)))), ((int)(((byte)(120)))));
-            this.button9.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button9.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(220)))), ((int)(((byte)(235)))));
-            this.button9.Location = new System.Drawing.Point(762, 333);
-            this.button9.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button9.Location = new System.Drawing.Point(738, 384);
             this.button9.Name = "button9";
-            this.button9.Size = new System.Drawing.Size(88, 31);
+            this.button9.Kind = QuickBrowser.ButtonKind.Info;
+            this.button9.Glyph = QuickBrowser.Theme.Glyph.Home;
+            this.button9.Size = new System.Drawing.Size(96, 30);
             this.button9.TabIndex = 20;
             this.button9.TabStop = false;
-            this.button9.Text = "🏠 Home";
-            this.button9.UseVisualStyleBackColor = false;
+            this.button9.Text = "Home";
             this.button9.MouseDown += new System.Windows.Forms.MouseEventHandler(this.button9_MouseDown);
             // 
             // button10
             // 
             this.button10.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button10.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button10.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button10.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button10.Location = new System.Drawing.Point(943, 665);
-            this.button10.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button10.Location = new System.Drawing.Point(924, 734);
             this.button10.Name = "button10";
-            this.button10.Size = new System.Drawing.Size(88, 31);
+            this.button10.Glyph = QuickBrowser.Theme.Glyph.OpenFolder;
+            this.button10.Size = new System.Drawing.Size(102, 30);
             this.button10.TabIndex = 27;
             this.button10.TabStop = false;
             this.button10.Text = "Explorer";
-            this.button10.UseVisualStyleBackColor = false;
             this.button10.Click += new System.EventHandler(this.button10_Click);
             // 
             // button13
             // 
             this.button13.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button13.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button13.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button13.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button13.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button13.Location = new System.Drawing.Point(941, 442);
-            this.button13.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button13.Location = new System.Drawing.Point(948, 534);
             this.button13.Name = "button13";
-            this.button13.Size = new System.Drawing.Size(88, 31);
+            this.button13.Glyph = QuickBrowser.Theme.Glyph.Drag;
+            this.button13.Size = new System.Drawing.Size(78, 30);
             this.button13.TabIndex = 34;
             this.button13.TabStop = false;
             this.button13.Text = "Drag";
-            this.button13.UseVisualStyleBackColor = false;
             this.button13.MouseDown += new System.Windows.Forms.MouseEventHandler(this.button13_MouseDown);
             // 
             // button14
             // 
             this.button14.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button14.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button14.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button14.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button14.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button14.Location = new System.Drawing.Point(852, 333);
-            this.button14.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button14.Location = new System.Drawing.Point(840, 384);
             this.button14.Name = "button14";
-            this.button14.Size = new System.Drawing.Size(88, 31);
+            this.button14.Glyph = QuickBrowser.Theme.Glyph.List;
+            this.button14.Size = new System.Drawing.Size(80, 30);
             this.button14.TabIndex = 37;
             this.button14.TabStop = false;
             this.button14.Text = "List";
-            this.button14.UseVisualStyleBackColor = false;
             this.button14.Click += new System.EventHandler(this.button14_Click);
             // 
             // button15
             // 
             this.button15.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button15.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button15.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button15.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button15.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button15.Location = new System.Drawing.Point(941, 333);
-            this.button15.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.button15.Location = new System.Drawing.Point(926, 384);
             this.button15.Name = "button15";
-            this.button15.Size = new System.Drawing.Size(88, 31);
+            this.button15.Glyph = QuickBrowser.Theme.Glyph.Refresh;
+            this.button15.Size = new System.Drawing.Size(100, 30);
             this.button15.TabIndex = 38;
             this.button15.TabStop = false;
-            this.button15.Text = "↻ Update";
-            this.button15.UseVisualStyleBackColor = false;
+            this.button15.Text = "Update";
             this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // button16
             // 
             this.button16.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button16.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button16.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button16.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button16.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button16.Location = new System.Drawing.Point(893, 271);
+            this.button16.Location = new System.Drawing.Point(944, 276);
             this.button16.Name = "button16";
-            this.button16.Size = new System.Drawing.Size(50, 23);
+            this.button16.TabStop = false;
+            this.button16.Glyph = QuickBrowser.Theme.Glyph.Unzip;
+            this.button16.Size = new System.Drawing.Size(82, 30);
             this.button16.TabIndex = 39;
-            this.button16.Text = "解";
-            this.button16.UseVisualStyleBackColor = false;
+            this.button16.Text = "解壓";
             this.button16.Click += new System.EventHandler(this.button16_Click);
             // 
             // button17
             // 
             this.button17.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button17.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(78)))));
-            this.button17.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(110)))));
-            this.button17.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button17.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.button17.Location = new System.Drawing.Point(893, 243);
+            this.button17.Location = new System.Drawing.Point(856, 276);
             this.button17.Name = "button17";
-            this.button17.Size = new System.Drawing.Size(47, 23);
+            this.button17.TabStop = false;
+            this.button17.Glyph = QuickBrowser.Theme.Glyph.Command;
+            this.button17.Size = new System.Drawing.Size(82, 30);
             this.button17.TabIndex = 40;
             this.button17.Text = "命令";
-            this.button17.UseVisualStyleBackColor = false;
             this.button17.Click += new System.EventHandler(this.button17_Click);
             // 
             // button18
             // 
-            this.button18.Location = new System.Drawing.Point(12, 15);
+            this.button18.Location = new System.Drawing.Point(12, 38);
             this.button18.Name = "button18";
-            this.button18.Size = new System.Drawing.Size(75, 23);
+            this.button18.TabStop = false;
+            this.button18.Kind = QuickBrowser.ButtonKind.Accent;
+            this.button18.Glyph = QuickBrowser.Theme.Glyph.Play;
+            this.button18.Size = new System.Drawing.Size(84, 30);
             this.button18.TabIndex = 43;
             this.button18.Text = "播放";
-            this.button18.UseVisualStyleBackColor = true;
             this.button18.Click += new System.EventHandler(this.button18_Click);
             // 
             // button19
             // 
-            this.button19.Location = new System.Drawing.Point(93, 15);
+            this.button19.Location = new System.Drawing.Point(296, 38);
             this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(75, 23);
+            this.button19.TabStop = false;
+            this.button19.Glyph = QuickBrowser.Theme.Glyph.Stop;
+            this.button19.Size = new System.Drawing.Size(84, 30);
             this.button19.TabIndex = 44;
             this.button19.Text = "中止";
-            this.button19.UseVisualStyleBackColor = true;
             this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
             // button20
             // 
-            this.button20.Location = new System.Drawing.Point(279, 13);
+            this.button20.Location = new System.Drawing.Point(102, 38);
             this.button20.Name = "button20";
-            this.button20.Size = new System.Drawing.Size(75, 23);
+            this.button20.TabStop = false;
+            this.button20.Glyph = QuickBrowser.Theme.Glyph.Pause;
+            this.button20.Size = new System.Drawing.Size(78, 30);
             this.button20.TabIndex = 46;
             this.button20.Text = "暫停";
-            this.button20.UseVisualStyleBackColor = true;
             this.button20.Click += new System.EventHandler(this.button20_Click);
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(360, 12);
+            this.button21.Location = new System.Drawing.Point(186, 38);
             this.button21.Name = "button21";
-            this.button21.Size = new System.Drawing.Size(75, 23);
+            this.button21.TabStop = false;
+            this.button21.Glyph = QuickBrowser.Theme.Glyph.Resume;
+            this.button21.Size = new System.Drawing.Size(104, 30);
             this.button21.TabIndex = 47;
             this.button21.Text = "解除暫停";
-            this.button21.UseVisualStyleBackColor = true;
             this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
             // button22
             // 
-            this.button22.Location = new System.Drawing.Point(441, 12);
+            this.button22.Location = new System.Drawing.Point(386, 38);
             this.button22.Name = "button22";
-            this.button22.Size = new System.Drawing.Size(75, 23);
+            this.button22.TabStop = false;
+            this.button22.Glyph = QuickBrowser.Theme.Glyph.Reverse;
+            this.button22.Size = new System.Drawing.Size(108, 30);
             this.button22.TabIndex = 48;
             this.button22.Text = "反轉播放";
-            this.button22.UseVisualStyleBackColor = true;
             this.button22.Click += new System.EventHandler(this.button22_Click);
             // 
             // pictureBox1
@@ -593,10 +527,10 @@ namespace QuickBrowser
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox1.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox1.Location = new System.Drawing.Point(15, 77);
+            this.pictureBox1.Location = new System.Drawing.Point(16, 72);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(737, 669);
+            this.pictureBox1.Size = new System.Drawing.Size(698, 752);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
@@ -625,9 +559,8 @@ namespace QuickBrowser
             // trackBar1
             // 
             this.trackBar1.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.trackBar1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(48)))));
             this.trackBar1.LargeChange = 1;
-            this.trackBar1.Location = new System.Drawing.Point(290, 754);
+            this.trackBar1.Location = new System.Drawing.Point(290, 781);
             this.trackBar1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.trackBar1.Maximum = 300;
             this.trackBar1.Minimum = 30;
@@ -642,13 +575,15 @@ namespace QuickBrowser
             // 
             // trackBar2
             // 
-            this.trackBar2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.trackBar2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.trackBar2.LargeChange = 1;
-            this.trackBar2.Location = new System.Drawing.Point(10, 45);
+            this.trackBar2.Location = new System.Drawing.Point(12, 4);
             this.trackBar2.Margin = new System.Windows.Forms.Padding(0);
             this.trackBar2.Maximum = 1000;
             this.trackBar2.Name = "trackBar2";
-            this.trackBar2.Size = new System.Drawing.Size(662, 45);
+            this.trackBar2.TabStop = false;
+            this.trackBar2.AutoSize = false;
+            this.trackBar2.Size = new System.Drawing.Size(1026, 28);
             this.trackBar2.TabIndex = 42;
             this.trackBar2.TickStyle = System.Windows.Forms.TickStyle.None;
             this.trackBar2.MouseDown += new System.Windows.Forms.MouseEventHandler(this.trackBar2_MouseDown);
@@ -656,13 +591,13 @@ namespace QuickBrowser
             // 
             // checkBox1
             // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(175, 15);
+            this.checkBox1.AutoSize = false;
+            this.checkBox1.Location = new System.Drawing.Point(508, 38);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(98, 20);
+            this.checkBox1.TabStop = false;
+            this.checkBox1.Size = new System.Drawing.Size(150, 30);
             this.checkBox1.TabIndex = 45;
-            this.checkBox1.Text = "無限循環撥放";
-            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.Text = "無限循環播放";
             // 
             // timer1
             // 
@@ -681,7 +616,7 @@ namespace QuickBrowser
             this.vlcControl1.Margin = new System.Windows.Forms.Padding(0);
             this.vlcControl1.MediaPlayer = null;
             this.vlcControl1.Name = "vlcControl1";
-            this.vlcControl1.Size = new System.Drawing.Size(1050, 777);
+            this.vlcControl1.Size = new System.Drawing.Size(1050, 840);
             this.vlcControl1.TabIndex = 41;
             this.vlcControl1.Text = "vlcControl1";
             this.vlcControl1.Visible = false;
@@ -690,8 +625,7 @@ namespace QuickBrowser
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.groupBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(35)))));
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.trackBar3);
             this.groupBox1.Controls.Add(this.button22);
             this.groupBox1.Controls.Add(this.button21);
@@ -700,27 +634,27 @@ namespace QuickBrowser
             this.groupBox1.Controls.Add(this.button19);
             this.groupBox1.Controls.Add(this.button18);
             this.groupBox1.Controls.Add(this.trackBar2);
-            this.groupBox1.Location = new System.Drawing.Point(0, 705);
+            this.groupBox1.Location = new System.Drawing.Point(0, 764);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(766, 72);
+            this.groupBox1.VolumeControl = this.trackBar3;
+            this.groupBox1.Size = new System.Drawing.Size(1050, 76);
             this.groupBox1.TabIndex = 43;
             this.groupBox1.Visible = false;
             this.groupBox1.VisibleChanged += new System.EventHandler(this.groupBox1_VisibleChanged);
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(38)))), ((int)(((byte)(38)))), ((int)(((byte)(55)))));
+            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.richTextBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.richTextBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.richTextBox1.Font = new System.Drawing.Font("微軟正黑體", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.richTextBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
+            this.richTextBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
             this.richTextBox1.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.richTextBox1.Location = new System.Drawing.Point(15, 15);
+            this.richTextBox1.Location = new System.Drawing.Point(50, 19);
             this.richTextBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.richTextBox1.Size = new System.Drawing.Size(648, 53);
+            this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            this.richTextBox1.Size = new System.Drawing.Size(534, 34);
             this.richTextBox1.TabIndex = 36;
             this.richTextBox1.TabStop = false;
             this.richTextBox1.Text = "123";
@@ -730,21 +664,21 @@ namespace QuickBrowser
             // comboBox1
             // 
             this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.comboBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.comboBox1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
+            this.comboBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.ItemHeight = 18;
             this.comboBox1.Items.AddRange(new object[] {
             "Cover",
             "Zoom",
             "Center"});
-            this.comboBox1.Location = new System.Drawing.Point(913, 552);
+            this.comboBox1.Location = new System.Drawing.Point(770, 639);
             this.comboBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(121, 24);
+            this.comboBox1.Size = new System.Drawing.Size(248, 24);
             this.comboBox1.TabIndex = 28;
             this.comboBox1.TabStop = false;
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
@@ -752,11 +686,11 @@ namespace QuickBrowser
             // comboBox2
             // 
             this.comboBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.comboBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.comboBox2.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
+            this.comboBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
             this.comboBox2.FormattingEnabled = true;
             this.comboBox2.ItemHeight = 18;
             this.comboBox2.Items.AddRange(new object[] {
@@ -764,10 +698,10 @@ namespace QuickBrowser
             "New to old",
             "Name(a-z)",
             "Big to small size(File)"});
-            this.comboBox2.Location = new System.Drawing.Point(764, 301);
+            this.comboBox2.Location = new System.Drawing.Point(770, 351);
             this.comboBox2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(179, 24);
+            this.comboBox2.Size = new System.Drawing.Size(248, 24);
             this.comboBox2.TabIndex = 31;
             this.comboBox2.TabStop = false;
             this.comboBox2.SelectedIndexChanged += new System.EventHandler(this.comboBox2_SelectedIndexChanged);
@@ -775,10 +709,10 @@ namespace QuickBrowser
             // numericUpDown1
             // 
             this.numericUpDown1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.numericUpDown1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(60)))));
+            this.numericUpDown1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.numericUpDown1.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.numericUpDown1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(210)))), ((int)(((byte)(210)))), ((int)(((byte)(235)))));
-            this.numericUpDown1.Location = new System.Drawing.Point(763, 267);
+            this.numericUpDown1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(226)))), ((int)(((byte)(226)))), ((int)(((byte)(242)))));
+            this.numericUpDown1.Location = new System.Drawing.Point(746, 318);
             this.numericUpDown1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.numericUpDown1.Maximum = new decimal(new int[] {
             10000,
@@ -786,7 +720,7 @@ namespace QuickBrowser
             0,
             0});
             this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(120, 19);
+            this.numericUpDown1.Size = new System.Drawing.Size(68, 19);
             this.numericUpDown1.TabIndex = 35;
             this.numericUpDown1.TabStop = false;
             this.numericUpDown1.Value = new decimal(new int[] {
@@ -797,13 +731,15 @@ namespace QuickBrowser
             // 
             // trackBar3
             // 
-            this.trackBar3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.trackBar3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.trackBar3.LargeChange = 1;
-            this.trackBar3.Location = new System.Drawing.Point(672, 1);
+            this.trackBar3.Location = new System.Drawing.Point(918, 39);
             this.trackBar3.Margin = new System.Windows.Forms.Padding(0);
             this.trackBar3.Maximum = 100;
             this.trackBar3.Name = "trackBar3";
-            this.trackBar3.Size = new System.Drawing.Size(94, 45);
+            this.trackBar3.TabStop = false;
+            this.trackBar3.AutoSize = false;
+            this.trackBar3.Size = new System.Drawing.Size(120, 28);
             this.trackBar3.TabIndex = 49;
             this.trackBar3.TickStyle = System.Windows.Forms.TickStyle.None;
             this.trackBar3.Scroll += new System.EventHandler(this.trackBar3_Scroll);
@@ -815,7 +751,7 @@ namespace QuickBrowser
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(35)))));
-            this.ClientSize = new System.Drawing.Size(1050, 777);
+            this.ClientSize = new System.Drawing.Size(1050, 840);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.vlcControl1);
             this.Controls.Add(this.pictureBox2);
@@ -931,78 +867,78 @@ namespace QuickBrowser
         #region 導覽按鈕
 
         /// <summary>返回按鈕</summary>
-        private System.Windows.Forms.Button button1;
+        private QuickBrowser.ModernButton button1;
 
         /// <summary>舊紀錄按鈕</summary>
-        private System.Windows.Forms.Button button2;
+        private QuickBrowser.ModernButton button2;
 
         /// <summary>重新舊紀錄按鈕</summary>
-        private System.Windows.Forms.Button button11;
+        private QuickBrowser.ModernButton button11;
 
         /// <summary>前進按鈕</summary>
-        private System.Windows.Forms.Button button12;
+        private QuickBrowser.ModernButton button12;
 
         #endregion
 
         #region 功能按鈕
 
         /// <summary>複製路徑按鈕 1</summary>
-        private System.Windows.Forms.Button button3;
+        private QuickBrowser.ModernButton button3;
 
         /// <summary>複製路徑按鈕 2</summary>
-        private System.Windows.Forms.Button button4;
+        private QuickBrowser.ModernButton button4;
 
         /// <summary>刪除按鈕</summary>
-        private System.Windows.Forms.Button button5;
+        private QuickBrowser.ModernButton button5;
 
         /// <summary>僅資料夾按鈕</summary>
-        private System.Windows.Forms.Button button6;
+        private QuickBrowser.ModernButton button6;
 
         /// <summary>複製到按鈕</summary>
-        private System.Windows.Forms.Button button7;
+        private QuickBrowser.ModernButton button7;
 
         /// <summary>移動到按鈕</summary>
-        private System.Windows.Forms.Button button8;
+        private QuickBrowser.ModernButton button8;
 
         /// <summary>首頁按鈕</summary>
-        private System.Windows.Forms.Button button9;
+        private QuickBrowser.ModernButton button9;
 
         /// <summary>開啟檔案總管按鈕</summary>
-        private System.Windows.Forms.Button button10;
+        private QuickBrowser.ModernButton button10;
 
         /// <summary>拖曳按鈕</summary>
-        private System.Windows.Forms.Button button13;
+        private QuickBrowser.ModernButton button13;
 
         /// <summary>列表按鈕</summary>
-        private System.Windows.Forms.Button button14;
+        private QuickBrowser.ModernButton button14;
 
         /// <summary>更新按鈕</summary>
-        private System.Windows.Forms.Button button15;
+        private QuickBrowser.ModernButton button15;
 
         /// <summary>解壓縮按鈕</summary>
-        private System.Windows.Forms.Button button16;
+        private QuickBrowser.ModernButton button16;
 
         /// <summary>命令按鈕</summary>
-        private System.Windows.Forms.Button button17;
+        private QuickBrowser.ModernButton button17;
 
         #endregion
 
         #region 影片播放控制按鈕
 
         /// <summary>到開頭按鈕</summary>
-        private System.Windows.Forms.Button button18;
+        private QuickBrowser.ModernButton button18;
 
         /// <summary>中止按鈕</summary>
-        private System.Windows.Forms.Button button19;
+        private QuickBrowser.ModernButton button19;
 
         /// <summary>暫停按鈕</summary>
-        private System.Windows.Forms.Button button20;
+        private QuickBrowser.ModernButton button20;
 
         /// <summary>解除暫停按鈕</summary>
-        private System.Windows.Forms.Button button21;
+        private QuickBrowser.ModernButton button21;
 
         /// <summary>反轉播放按鈕</summary>
-        private System.Windows.Forms.Button button22;
+        private QuickBrowser.ModernButton button22;
 
         #endregion
 
@@ -1029,10 +965,10 @@ namespace QuickBrowser
         #region 滑桿控制項
 
         /// <summary>縮放滑桿</summary>
-        private System.Windows.Forms.TrackBar trackBar1;
+        private QuickBrowser.FlatTrackBar trackBar1;
 
         /// <summary>影片進度滑桿</summary>
-        private System.Windows.Forms.TrackBar trackBar2;
+        private QuickBrowser.FlatTrackBar trackBar2;
 
         #endregion
 
@@ -1042,7 +978,7 @@ namespace QuickBrowser
         private QuickBrowser.FlatNumericUpDown numericUpDown1;
 
         /// <summary>無限循環播放核取方塊</summary>
-        private System.Windows.Forms.CheckBox checkBox1;
+        private QuickBrowser.ToggleSwitch checkBox1;
 
         #endregion
 
@@ -1063,11 +999,11 @@ namespace QuickBrowser
         #region 群組容器
 
         /// <summary>影片控制群組</summary>
-        private System.Windows.Forms.Panel groupBox1;
+        private QuickBrowser.MediaBar groupBox1;
 
         #endregion
 
         public LibVLCSharp.WinForms.VideoView vlcControl1;
-        private System.Windows.Forms.TrackBar trackBar3;
+        private QuickBrowser.FlatTrackBar trackBar3;
     }
 }

@@ -73,6 +73,7 @@ namespace QuickBrowser
                     _drawPanel.MouseMove += pictureBox1_MouseMove;
                     _drawPanel.MouseDown += pictureBox1_MouseDown;
                     _drawPanel.MouseUp += pictureBox1_MouseUp_1;
+                    _drawPanel.MouseLeave += (s, e) => scrollBarHover = false;
                     _drawPanel.TabStop = false;
                     Controls.Add(_drawPanel);
                 }
@@ -85,6 +86,7 @@ namespace QuickBrowser
         public Form1()
         {
             InitializeComponent();
+            ApplyModernUi();
             Core.Initialize();
             _libVLC = new LibVLC();
             _mediaPlayer = new MediaPlayer(_libVLC);
@@ -147,7 +149,8 @@ namespace QuickBrowser
         void newGraphic()
         {
             resetingGraphic = true;
-            Bitmap bitmap = new Bitmap(drawPanel.Width, drawPanel.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            // PArgb：GDI+ 貼圖到畫面時不必逐像素預乘，每幀繪製快很多
+            Bitmap bitmap = new Bitmap(drawPanel.Width, drawPanel.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
             drawPanel.Image = bitmap;
             g = Graphics.FromImage(bitmap);
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
@@ -455,13 +458,18 @@ namespace QuickBrowser
             }
             else if (MouseButtons == MouseButtons.None || selectRectangleMode)
             {
-                targetScrollY = scrollY + (picH + 50) * Math.Sign(delta);
+                // 連續滾動時累加在目標上（不從目前位置重算），快速滾輪才不會「卡住」；最多領先三格
+                float stepY = (picH + 50) * Math.Sign(delta);
+                float lead = Math.Abs(stepY) * 3;
+                float next = targetScrollY + stepY;
+                targetScrollY = Math.Max(scrollY - lead, Math.Min(scrollY + lead, next));
             }
 
             setToDraw();
         }
         void stopVideo()
         {
+            if (reverse) StopReverse(resume: false);
             vlcControl1.MediaPlayer.Stop();
             vlcControl1.Visible = false;
             groupBox1.Visible = false;
@@ -559,34 +567,43 @@ namespace QuickBrowser
 
         private bool stopScroll = false;
         uint oldIndex;
+        // 捲動緩動的時間常數（秒）：越小越跟手
+        const double scrollEaseSeconds = 0.045;
+
         private void insideMove()
         {
+            var clock = Stopwatch.StartNew();
+            double last = clock.Elapsed.TotalSeconds;
             while (!exit)
             {
                 while (pausing)
                 {
                     Thread.Sleep(10);
+                    last = clock.Elapsed.TotalSeconds;
                 }
+                double now = clock.Elapsed.TotalSeconds;
+                double dt = Math.Min(now - last, 0.05);
+                last = now;
+
+                float target = targetScrollY;
                 if (stopScroll)
                 {
 
                 }
-                else if (targetScrollY > scrollY)
+                else if (target != scrollY)
                 {
-                    scrollY += speedScrollY;
-                    if (scrollY > targetScrollY)
+                    // 依實際經過時間做指數緩動：不受 Sleep 精度影響，速度穩定、收尾柔順
+                    float diff = target - scrollY;
+                    float step = (float)(diff * (1 - Math.Exp(-dt / scrollEaseSeconds)));
+                    if (Math.Abs(diff) < 0.5f || Math.Abs(step) >= Math.Abs(diff))
                     {
-                        scrollY = targetScrollY;
+                        scrollY = target;
                     }
-
-                    setToDraw();
-                }
-                else if (targetScrollY < scrollY)
-                {
-                    scrollY -= speedScrollY;
-                    if (scrollY < targetScrollY)
+                    else
                     {
-                        scrollY = targetScrollY;
+                        // 至少移動一點，避免尾段拖太久
+                        float min = (float)(dt * 60) * Math.Sign(diff);
+                        scrollY += Math.Abs(step) < Math.Abs(min) ? min : step;
                     }
 
                     setToDraw();
@@ -626,14 +643,14 @@ namespace QuickBrowser
                 pictureBox2.Width = pictureBox2.Image.Width;
                 pictureBox2.Height = pictureBox2.Image.Height;
                 pictureBox2.Left = Width / 2 - pictureBox2.Width / 2;
-                pictureBox2.Top = (ClientRectangle.Height - pictureBox2.Height) / 2;
+                pictureBox2.Top = chromeTop + (ClientRectangle.Height - chromeTop - pictureBox2.Height) / 2;
             }
             else
             {
                 pictureBox2.Width = Width;
-                pictureBox2.Height = ClientRectangle.Height;
+                pictureBox2.Height = ClientRectangle.Height - chromeTop;
                 pictureBox2.Left = 0;
-                pictureBox2.Top = 0;
+                pictureBox2.Top = chromeTop;
             }
             pictureBox2.Dock = DockStyle.None;
         }
@@ -2873,15 +2890,7 @@ namespace QuickBrowser
             float scrollHeight = getScrollHeight();
             if (scrollHeight >= bitmapHeight)
             {
-                g.FillRectangle(Brushes.Gray, new RectangleF(blockRight - 20 - 1, 20 - 1, 3, bitmapHeight - 40));
-                g.DrawLine(Pens.White, new PointF(blockRight - 20, 20),
-                    new PointF(blockRight - 20, bitmapHeight - 20));
-                g.FillEllipse(Brushes.Gray,
-                    new RectangleF(blockRight - 30 - 2,
-                        20 - (((float)scrollY / getScrollHeight()) * (bitmapHeight - 40)) - 2, 24, 24));
-                g.FillEllipse(Brushes.White,
-                    new RectangleF(blockRight - 30,
-                        20 - (((float)scrollY / getScrollHeight()) * (bitmapHeight - 40)), 20, 20));
+                drawRightScrollBar(g, scrollHeight);
             }
 
             if (justBackground)
@@ -3008,6 +3017,16 @@ namespace QuickBrowser
         }
         bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
         private bool going = false;
+        const int frameMilliseconds = 7;
+        static readonly Stopwatch frameClock = Stopwatch.StartNew();
+
+        [DllImport("winmm.dll")] static extern uint timeBeginPeriod(uint period);
+        static Form1()
+        {
+            // 預設計時器精度 15.6ms 會讓 Sleep(1)/Sleep(10) 變成 1~16ms 不等，是捲動抖動的主因
+            timeBeginPeriod(1);
+        }
+
         void drawingThread()
         {
             while (!exit)
@@ -3018,10 +3037,13 @@ namespace QuickBrowser
                 }
                 try
                 {
+                    long frameStart = frameClock.ElapsedTicks;
                     insideDraw();
                     var ia = drawPanel.BeginInvoke(refresh);
-                    Thread.Sleep(10);
                     drawPanel.EndInvoke(ia);
+                    // 固定約 144fps 的節奏（搭配 timeBeginPeriod(1) 讓 Sleep 準確），避免幀間隔忽長忽短
+                    int spent = (int)((frameClock.ElapsedTicks - frameStart) * 1000 / Stopwatch.Frequency);
+                    Thread.Sleep(Math.Max(1, frameMilliseconds - spent));
                 }
                 catch (Exception ex)
                 {
@@ -3875,15 +3897,15 @@ namespace QuickBrowser
             {
                 case Operate.go:
                     //richTextBox1.SelectionColor = Color.Black;
-                    richTextBox2.BackColor = Color.White;
+                    richTextBox2.BackColor = Theme.ModeGo;
                     break;
                 case Operate.delete:
                     //richTextBox1.SelectionColor = Color.White;
-                    richTextBox2.BackColor = Color.Red;
+                    richTextBox2.BackColor = Theme.ModeDelete;
                     break;
                 case Operate.select:
                     //richTextBox1.SelectionColor = Color.Black;
-                    richTextBox2.BackColor = Color.Yellow;
+                    richTextBox2.BackColor = Theme.ModeSelect;
                     break;
                 default:
                     break;
@@ -4065,7 +4087,7 @@ namespace QuickBrowser
                         goNum(go);
                     }
                     newOpen = false;
-                    richTextBox2.BackColor = Color.White;
+                    richTextBox2.BackColor = Theme.ModeGo;
                     label3.Text = "";
                 }
                 setToDraw();
@@ -4084,11 +4106,11 @@ namespace QuickBrowser
                 newOpen = !newOpen;
                 if (newOpen)
                 {
-                    richTextBox2.BackColor = Color.Yellow;
+                    richTextBox2.BackColor = Theme.ModeSelect;
                 }
                 else
                 {
-                    richTextBox2.BackColor = Color.White;
+                    richTextBox2.BackColor = Theme.ModeGo;
                 }
             }
             else if (c == 'x')
@@ -4135,17 +4157,31 @@ namespace QuickBrowser
         float oldY;
         PointF? p1, p2;
         bool leftScrollDown;
+        // 右側捲軸的可點範圍：軌道畫在 x = blockRight-20、y = 20 ~ bitmapHeight-20，左右各放寬一點好點
+        bool hitRightScrollBar(Point p)
+        {
+            if (getScrollHeight() < bitmapHeight) return false;   // 內容不足一頁時不畫捲軸
+            var rectangle = new RectangleF(blockRight - 20 - 16, 10, 32, bitmapHeight - 20);
+            return rectangle.Contains(p);
+        }
+
+        void jumpRightScrollBar(int y)
+        {
+            float ratio = Math.Max(0f, Math.Min(1f, (y - 20f) / (bitmapHeight - 40)));
+            targetScrollY = scrollY = -ratio * getScrollHeight();
+            setToDraw();
+        }
+
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
+            scrollBarHover = hitRightScrollBar(e.Location);
             //right scroll bar
             if (e.Button == MouseButtons.Left)
             {
-                RectangleF rectangle = new RectangleF(blockRight - 20 - 10, 20, 20, blockRight - 40);
-                if (rectangle.Contains(e.Location) || leftScrollDown)
+                if (leftScrollDown || hitRightScrollBar(e.Location))
                 {
                     leftScrollDown = true;
-                    targetScrollY = scrollY = -(float)(e.Location.Y - 20) / (bitmapHeight - 40) * getScrollHeight();
-                    setToDraw();
+                    jumpRightScrollBar(e.Location.Y);
                     return;
                 }
                 else
@@ -4258,6 +4294,13 @@ namespace QuickBrowser
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             if (lockPictureBoxMouswDown) return;
+            // 點在右側捲軸上：直接跳到該位置，不當成選取卡片
+            if (e.Button == MouseButtons.Left && hitRightScrollBar(e.Location))
+            {
+                leftScrollDown = true;
+                jumpRightScrollBar(e.Location.Y);
+                return;
+            }
             selectStart = scrollY;
             p1 = e.Location;
             p2 = null;
@@ -4811,7 +4854,7 @@ namespace QuickBrowser
             }
 
 
-            if (_mediaPlayer != null && _mediaPlayer.Time > 0)
+            if (_mediaPlayer != null && _mediaPlayer.Time > 0 && !reverse)
             {
                 int time = (int)((float)_mediaPlayer.Time * 1000f / _mediaPlayer.Media.Duration);
                 trackBar2.Value = time;
@@ -4821,13 +4864,7 @@ namespace QuickBrowser
             {
                 if (reverse)
                 {
-                    if (_mediaPlayer.Time < 0 && !pause)
-                    {
-                        _mediaPlayer.Time = 1000;
-                        progress = 1000;
-                        _mediaPlayer.Pause();
-                        timer5.Enabled = reverse;
-                    }
+                    // 倒放的循環由 timer5_Tick 處理
                 }
                 else
                 {
@@ -5398,6 +5435,10 @@ namespace QuickBrowser
                 pictureBox2.Visible = false;
                 loopPicture.Visible = false;
                 vlcControl1.Visible = false;
+                // 影片控制列只在播放時由 timer1 顯示；trackBar1、label9 在設計上就是隱藏的
+                groupBox1.Visible = false;
+                trackBar1.Visible = false;
+                label9.Visible = false;
                 //stopScroll = false;
             }
             setToDraw();
@@ -5737,6 +5778,7 @@ namespace QuickBrowser
 
         private void pictureBox1_MouseUp_1(object sender, MouseEventArgs e)
         {
+            leftScrollDown = false;
             oldY = e.Y;
             p1 = p2 = null;
             setToDraw();
@@ -5786,16 +5828,26 @@ namespace QuickBrowser
 
         private void trackBar2_MouseDown(object sender, MouseEventArgs e)
         {
-            double ratio = (double)(e.X - 10) / (trackBar2.Width - 20);
-            ratio = Math.Max(0, Math.Min(1, ratio)); // 夾在 0~1 之間
-            trackBar2.Value = progress;
-            progress = (int)(ratio * 1000);
+            if (e != null)
+            {
+                double ratio = (double)(e.X - 10) / (trackBar2.Width - 20);
+                ratio = Math.Max(0, Math.Min(1, ratio)); // 夾在 0~1 之間
+                trackBar2.Value = progress;
+                progress = (int)(ratio * 1000);
+            }
 
             _mediaPlayer.Stop();
             _mediaPlayer.Play();
             _mediaPlayer.Time = 0;
 
             _mediaPlayer.Time = progress * _mediaPlayer.Media.Duration / 1000;
+            if (reverse)
+            {
+                // 倒放中拖曳進度條：從新位置繼續倒放
+                reversePositionMs = progress * _mediaPlayer.Media.Duration / 1000;
+                _mediaPlayer.SetPause(true);
+                reverseClock.Restart();
+            }
         }
         bool pause;
         // 3. 滑鼠放開時：繼續播放
@@ -5811,7 +5863,9 @@ namespace QuickBrowser
         private void button18_Click(object sender, EventArgs e)
         {
             pause = false;
+            if (reverse) StopReverse(resume: false);
             _mediaPlayer.Play();
+            _mediaPlayer.SetPause(false);
             button20.Enabled = button21.Enabled = button22.Enabled = true;
         }
 
@@ -5831,54 +5885,95 @@ namespace QuickBrowser
 
         private void button21_Click(object sender, EventArgs e)
         {
-            _mediaPlayer.SetPause(false);
             pause = false;
-            timer5.Enabled = reverse;
+            if (reverse)
+            {
+                // 倒放中維持暫停，由 timer5 推進畫面
+                reverseClock.Restart();
+                timer5.Enabled = true;
+            }
+            else
+            {
+                _mediaPlayer.SetPause(false);
+            }
         }
 
         bool reverse = false;
+        // 反轉播放目前位置（毫秒）。VLC 不支援倒放，做法是暫停後依實際經過時間往回 seek
+        long reversePositionMs;
+        readonly Stopwatch reverseClock = new Stopwatch();
+
         private void button22_Click(object sender, EventArgs e)
         {
-            reverse = !reverse;
-            timer5.Enabled = reverse;
-            progress = (int)(_mediaPlayer.Time * 1000 / _mediaPlayer.Media.Duration);
-            _mediaPlayer.SetPause(true);
-            _mediaPlayer.Play();
-
-            callMain(() =>
-            {
-                if (progress >= _mediaPlayer.Media.Duration)
-                {
-                    progress = 0;
-                }
-                _mediaPlayer.Time = progress;
-                int time = trackBar2.Value = (int)progress;
-                trackBar2_MouseDown(sender, null);
-                progress = trackBar2.Value = time;
-                _mediaPlayer.Stop();
-                _mediaPlayer.Play();
-                _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(time));
-            });
+            if (_mediaPlayer.Media == null) return;
+            if (reverse) StopReverse(resume: !pause);
+            else StartReverse();
         }
+
+        void StartReverse()
+        {
+            long duration = _mediaPlayer.Media.Duration;
+            if (duration <= 0) return;
+
+            long now = _mediaPlayer.Time;
+            // 已播完（或時間無效）就從結尾開始倒放
+            if (now <= 0 || now >= duration || _mediaPlayer.State == VLCState.Ended)
+            {
+                now = duration;
+                if (_mediaPlayer.State == VLCState.Ended || _mediaPlayer.State == VLCState.Stopped)
+                    _mediaPlayer.Play();
+            }
+
+            reverse = true;
+            reversePositionMs = now;
+            _mediaPlayer.SetPause(true);
+            reverseClock.Restart();
+            timer5.Interval = 40;
+            timer5.Enabled = !pause;
+            button22.Kind = ButtonKind.Accent;
+        }
+
+        void StopReverse(bool resume)
+        {
+            reverse = false;
+            timer5.Enabled = false;
+            reverseClock.Stop();
+            button22.Kind = ButtonKind.Default;
+            if (resume) _mediaPlayer.SetPause(false);
+        }
+
         volatile int progress;
         bool first = true;
         private void timer5_Tick(object sender, EventArgs e)
         {
+            if (!reverse || _mediaPlayer.Media == null) { timer5.Enabled = false; return; }
+
+            long elapsed = reverseClock.ElapsedMilliseconds;
+            reverseClock.Restart();
+            // 拖曳進度條時不動
             if (MouseButtons == MouseButtons.Left) return;
-            if (progress < 0 && checkBox1.Checked)
+
+            long duration = _mediaPlayer.Media.Duration;
+            reversePositionMs -= elapsed;
+            if (reversePositionMs <= 0)
             {
-                progress = 1000;
+                if (checkBox1.Checked)
+                {
+                    reversePositionMs = duration;   // 無限循環：回到結尾繼續倒放
+                }
+                else
+                {
+                    reversePositionMs = 0;
+                    _mediaPlayer.Time = 0;
+                    StopReverse(resume: false);
+                    return;
+                }
             }
-            progress -= 1;
-            if (progress < 0)
-            {
-                progress = -1;
-            }
-            _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(progress));
-            _mediaPlayer.SetPause(false);
-            _mediaPlayer.Play();
-            _mediaPlayer.SetPause(true);
-            vlcControl1.Refresh();
+
+            // 暫停狀態下設定 Time，VLC 會解碼並顯示該位置的畫面
+            _mediaPlayer.Time = reversePositionMs;
+            progress = (int)(reversePositionMs * 1000 / Math.Max(1, duration));
+            trackBar2.Value = Math.Max(trackBar2.Minimum, Math.Min(trackBar2.Maximum, progress));
         }
 
         private void Form1_MouseDown_1(object sender, MouseEventArgs e)

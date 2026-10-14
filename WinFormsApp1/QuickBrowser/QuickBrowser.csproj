@@ -300,6 +300,23 @@
     <Compile Include="ChooseBox.Designer.cs">
       <DependentUpon>ChooseBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="FlatTrackBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Form1.Theme.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MediaBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ModernButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Theme.cs" />
+    <Compile Include="WindowChrome.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="FlatComboBox.cs">
       <SubType>Component</SubType>
     </Compile>

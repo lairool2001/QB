@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -9,11 +9,11 @@ namespace QuickBrowser
     public class FlatComboBox : ComboBox
     {
         // ── 主題色 ──────────────────────────────────────────
-        static readonly Color BgColor    = Color.FromArgb(42, 42, 60);
-        static readonly Color BgHover    = Color.FromArgb(55, 55, 78);
-        static readonly Color BgSelected = Color.FromArgb(65, 65, 95);
-        static readonly Color TextColor  = Color.FromArgb(210, 210, 235);
-        static readonly Color ArrowColor = Color.FromArgb(150, 150, 190);
+        static readonly Color BgColor    = Theme.Field;
+        static readonly Color BgSelected = Theme.Lerp(Theme.Field, Theme.Accent, 0.45f);
+        static readonly Color TextColor  = Theme.Text;
+        static readonly Color ArrowColor = Theme.TextMuted;
+        static readonly Color ArrowHover = Theme.Text;
         // ────────────────────────────────────────────────────
 
         const int GWL_STYLE        = -16;
@@ -95,7 +95,8 @@ namespace QuickBrowser
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             // 背景（含邊緣 +1 覆蓋殘留線）
-            using (var b = new SolidBrush(_hover ? BgHover : BgColor))
+            // 背景與外圍欄位同色，hover 只點亮箭頭，避免底色跳動
+            using (var b = new SolidBrush(BgColor))
                 g.FillRectangle(b, new Rectangle(-1, -1, Width + 2, Height + 2));
 
             // 文字
@@ -106,7 +107,7 @@ namespace QuickBrowser
 
             // 三角箭頭
             float cx = Width - 12f, cy = Height / 2f;
-            using (var b = new SolidBrush(ArrowColor))
+            using (var b = new SolidBrush(_hover || DroppedDown ? ArrowHover : ArrowColor))
                 g.FillPolygon(b, new PointF[]
                 {
                     new PointF(cx - 4f, cy - 2f),
