@@ -91,6 +91,17 @@ namespace QuickBrowser
             _libVLC = new LibVLC();
             _mediaPlayer = new MediaPlayer(_libVLC);
             vlcControl1.MediaPlayer = _mediaPlayer;
+            _mediaPlayer.EndReached += MediaPlayer_EndReached;
+            // 影片已播完才打開「無限循環」時，直接從頭再播
+            checkBox1.CheckedChanged += (s, e) =>
+            {
+                if (checkBox1.Checked && !reverse && vlcControl1.Visible && _mediaPlayer.Media != null
+                    && _mediaPlayer.State == VLCState.Ended)
+                {
+                    _mediaPlayer.Stop();
+                    _mediaPlayer.Play();
+                }
+            };
         }
 
         bool isDisk;
@@ -105,18 +116,11 @@ namespace QuickBrowser
                     return RectangleF.Empty;
                 }
                 RectangleF _selectRectangle;
-                PointF min, max;
-                min = new PointF(Math.Min(p1.Value.X, p2.Value.X), Math.Min(p1.Value.Y, p2.Value.Y));
-                max = new PointF(Math.Max(p1.Value.X, p2.Value.X), Math.Max(p1.Value.Y, p2.Value.Y));
-
-                if (selectStart > scrollY && p2.Value.Y > p1.Value.Y)
-                {
-                    min.Y += selectDelta;
-                }
-                else if (selectStart < scrollY && p2.Value.Y < p1.Value.Y)
-                {
-                    //max.Y += selectDelta;
-                }
+                // 起點釘在內容上：按下後清單捲了多少，起點就跟著移多少；終點是目前滑鼠位置。
+                // 不論由上往下或由下往上拖、往哪個方向捲都成立
+                PointF anchor = selectAnchor;
+                PointF min = new PointF(Math.Min(anchor.X, p2.Value.X), Math.Min(anchor.Y, p2.Value.Y));
+                PointF max = new PointF(Math.Max(anchor.X, p2.Value.X), Math.Max(anchor.Y, p2.Value.Y));
                 _selectRectangle = new RectangleF(min.X, min.Y, max.X - min.X, max.Y - min.Y);
                 _selectRectangle.Width = Math.Max(1, _selectRectangle.Width);
                 _selectRectangle.Height = Math.Max(1, _selectRectangle.Height);
@@ -404,9 +408,39 @@ namespace QuickBrowser
             get
             {
                 if (!p1.HasValue || !p2.HasValue) return false;
-                float area = Math.Abs(p2.Value.X - p1.Value.X) * Math.Abs(p2.Value.Y - p1.Value.Y);
+                PointF anchor = selectAnchor;
+                float area = Math.Abs(p2.Value.X - anchor.X) * Math.Abs(p2.Value.Y - anchor.Y);
                 return area > 50;
             }
+        }
+
+        /// <summary>框選起點在目前畫面上的位置（按下時的位置 + 之後捲動的距離）。</summary>
+        PointF selectAnchor => p1.HasValue ? new PointF(p1.Value.X, p1.Value.Y + selectDelta) : PointF.Empty;
+
+        // 框選中用滾輪捲動時，滑鼠沒動也要更新被框到的卡片
+        long lastSelectScrollUpdate;
+        float lastSelectScrollY = float.NaN;
+
+        void updateSelectionWhileScrolling()
+        {
+            if (!p1.HasValue || !p2.HasValue || MouseButtons != MouseButtons.Right) { lastSelectScrollY = float.NaN; return; }
+            if (scrollY == lastSelectScrollY) return;
+            long now = Stopwatch.GetTimestamp();
+            // 約 30ms 一次；捲動停下時（scrollY == target）一定再更新一次
+            if (scrollY != targetScrollY && (now - lastSelectScrollUpdate) * 1000 / Stopwatch.Frequency < 30) return;
+            lastSelectScrollUpdate = now;
+            lastSelectScrollY = scrollY;
+            try
+            {
+                BeginInvoke((Action)(() =>
+                {
+                    if (!selectRectangleMode || MouseButtons != MouseButtons.Right) return;
+                    updateSelectRectangle();
+                    richTextBox4.Text = $"Selected Count: {selected.Count}";
+                    setToDraw();
+                }));
+            }
+            catch (InvalidOperationException) { }
         }
         public void mainMouseWheel(int delta)
         {
@@ -563,6 +597,9 @@ namespace QuickBrowser
         {
         }
         const float startTargetScrollY = -25;
+        // 卡片第一列相對 scrollY 的垂直位置；在最頂端（scrollY = startTargetScrollY）時第一列距頂端 50px。
+        // 原本用水平置中的 padding 兼當上邊距，視窗寬度不同時上方空隙忽大忽小
+        const int topGapY = 75;
         volatile float targetScrollY = startTargetScrollY;
         float speedScrollY = 20f;
         float scrollThreadWait = 50;
@@ -677,6 +714,7 @@ namespace QuickBrowser
                 {
                     //Application.DoEvents();
                 }
+                updateSelectionWhileScrolling();
                 /*if (lockGlobal)
                 {
                     uint newIndex = ((uint)(-scrollY / getScrollHeight()));
@@ -2567,7 +2605,7 @@ namespace QuickBrowser
             }
             else
             {
-                r.Y = (int)scrollY + padding;
+                r.Y = (int)scrollY + topGapY;
             }
 
             minIndex = -1;
@@ -2584,6 +2622,15 @@ namespace QuickBrowser
             }
 
             bool justBackground = false;
+            // 這一幀排版到第幾張；之後的卡片 bound 還是舊位置（只排到畫面下方 300px 就停）
+            int laidOutUntil = cardList.Count - 1;
+            // 框選中，框的起點可能已被捲到畫面下方很遠處；至少要排版到框的底部，框內卡片的位置才是最新的
+            float layoutBottom = pictureBox1.Height;
+            if (selectRectangleMode)
+            {
+                var sel = selectRectangle;
+                if (!sel.IsEmpty) layoutBottom = Math.Max(layoutBottom, sel.Bottom);
+            }
             for (int i = 0; i < cardList.Count; i++)
             {
                 FileDirectoryCard card = cardList[i];
@@ -2612,7 +2659,8 @@ namespace QuickBrowser
                 {
                     if (triggerNoSelectGoTo)
                     {
-                        targetScrollY = scrollY = -r.Y - padding;
+                        // 跳到的那一列放在與第一列相同的位置（距頂端 topGapY + startTargetScrollY）
+                        targetScrollY = scrollY = 2 * startTargetScrollY - r.Y;
                         if (scrollY > 0)
                         {
                             targetScrollY = scrollY = startTargetScrollY;
@@ -2621,7 +2669,7 @@ namespace QuickBrowser
                     }
                     else
                     {
-                        targetScrollY = scrollY = -r.Y + r.Height / 2 + bitmapHeight / 4 + padding;
+                        targetScrollY = scrollY = 2 * startTargetScrollY - r.Y + r.Height / 2 + bitmapHeight / 4;
                         if (scrollY > 0)
                         {
                             targetScrollY = scrollY = startTargetScrollY;
@@ -2832,6 +2880,10 @@ namespace QuickBrowser
                     RectangleF r5 = r;
                     r5.X += r5.Width * 0.1f;
                     r5.Width *= 0.8f;
+                    // 檔名從卡片頂邊往下 5px（原本貼在頂邊上）
+                    const float nameOffset = 5f;
+                    r5.Y += nameOffset;
+                    r5.Height -= nameOffset;
                     string indexStr = card.index.ToString();
                     SizeF sizeF = g.MeasureString(indexStr, font2);
                     switch (card.type)
@@ -2928,9 +2980,10 @@ namespace QuickBrowser
                     }
                     maxHeight = 0;
                     const int preloadHeight = 300;
-                    if (r.Y >= pictureBox1.Height + preloadHeight && gotoIndex == -1 &&
+                    if (r.Y >= layoutBottom + preloadHeight && gotoIndex == -1 &&
                         string.IsNullOrEmpty(selectName))
                     {
+                        laidOutUntil = i;
                         break;
                     }
 
@@ -2939,6 +2992,7 @@ namespace QuickBrowser
 
                 max = r.Y;
             }
+            lastLaidOutCardIndex = laidOutUntil;
 
             if (gotoIndex != -1 || selectName != "")
             {
@@ -3200,9 +3254,9 @@ namespace QuickBrowser
             if (count <= 0) return 1;
             int rows = (count + columns - 1) / columns;
 
-            // 第一列頂端 = scrollY + pad；最後一列底端 = scrollY + pad + (rows - 1) * rowStep + cardH
+            // 第一列頂端 = scrollY + topGapY；最後一列底端 = scrollY + topGapY + (rows - 1) * rowStep + cardH
             const int bottomMargin = 20;
-            float contentBottom = pad + (rows - 1) * rowStep + cardH;
+            float contentBottom = topGapY + (rows - 1) * rowStep + cardH;
             float maxScroll = contentBottom - (bitmapHeight - bottomMargin);
             return Math.Max(1, maxScroll);
         }
@@ -4361,14 +4415,21 @@ namespace QuickBrowser
             }
         }
 
+        // insideDraw 最後一幀實際排版到的卡片索引
+        volatile int lastLaidOutCardIndex = int.MaxValue;
+
         private void updateSelectRectangle()
         {
             var selectRectangleEx = selectRectangle;
+            int laidOut = lastLaidOutCardIndex;
             //selectRectangleEx.Y -= (bitmapHeight - pictureBox1.Height) / 2;
             for (int i = 0; i < cardList.Count; i++)
             {
                 var card = cardList[i];
-                if (card.bound.IntersectsWith(Rectangle.Round(selectRectangleEx)))
+                // 沒被排版到的卡片位置已過期（往上捲時它們原本在畫面中的舊位置會誤判成被框到），
+                // 它們實際在畫面下方很遠處，不可能在框內
+                bool current = i <= laidOut;
+                if (current && card.bound.IntersectsWith(Rectangle.Round(selectRectangleEx)))
                 {
                     addSelectedCard(card);
                 }
@@ -5008,21 +5069,7 @@ namespace QuickBrowser
                 trackBar2.Value = time;
             }
 
-            if (checkBox1.Checked)
-            {
-                if (reverse)
-                {
-                    // 倒放的循環由 timer5_Tick 處理
-                }
-                else
-                {
-                    if (_mediaPlayer.Time >= _mediaPlayer.Media.Duration * 0.95f && _mediaPlayer.IsPlaying)
-                    {
-                        _mediaPlayer.Time = 0;
-                        _mediaPlayer.Play();
-                    }
-                }
-            }
+            // 無限循環：正向播放由 MediaPlayer_EndReached 處理，倒放由 timer5_Tick 處理
 
             if (MouseButtons == MouseButtons.Middle && _mediaPlayer.Time > 0)
             {
@@ -6044,6 +6091,24 @@ namespace QuickBrowser
             {
                 _mediaPlayer.SetPause(false);
             }
+        }
+
+        // 播到結尾時由 VLC 通知；原本每 100ms 檢查「已播 95% 且仍在播放」，
+        // VLC 的時間更新較粗，常常錯過那段時間就直接播完停住，所以循環兩三次就會停
+        private void MediaPlayer_EndReached(object sender, EventArgs e)
+        {
+            // 這個事件在 VLC 的執行緒上，不能在這裡直接呼叫 libvlc；切回 UI 執行緒再重播
+            try
+            {
+                BeginInvoke((Action)(() =>
+                {
+                    if (!checkBox1.Checked || reverse || !vlcControl1.Visible || _mediaPlayer.Media == null) return;
+                    _mediaPlayer.Stop();
+                    _mediaPlayer.Play();
+                    trackBar2.Value = trackBar2.Minimum;
+                }));
+            }
+            catch (InvalidOperationException) { }
         }
 
         bool reverse = false;
