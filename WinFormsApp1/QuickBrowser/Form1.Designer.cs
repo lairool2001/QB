@@ -479,7 +479,7 @@ namespace QuickBrowser
             // 
             // button19
             // 
-            this.button19.Location = new System.Drawing.Point(296, 38);
+            this.button19.Location = new System.Drawing.Point(186, 38);
             this.button19.Name = "button19";
             this.button19.TabStop = false;
             this.button19.Glyph = QuickBrowser.Theme.Glyph.Stop;
@@ -512,7 +512,7 @@ namespace QuickBrowser
             // 
             // button22
             // 
-            this.button22.Location = new System.Drawing.Point(386, 38);
+            this.button22.Location = new System.Drawing.Point(276, 38);
             this.button22.Name = "button22";
             this.button22.TabStop = false;
             this.button22.Glyph = QuickBrowser.Theme.Glyph.Reverse;
@@ -592,7 +592,7 @@ namespace QuickBrowser
             // checkBox1
             // 
             this.checkBox1.AutoSize = false;
-            this.checkBox1.Location = new System.Drawing.Point(508, 38);
+            this.checkBox1.Location = new System.Drawing.Point(398, 38);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.TabStop = false;
             this.checkBox1.Size = new System.Drawing.Size(150, 30);
@@ -628,7 +628,6 @@ namespace QuickBrowser
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.trackBar3);
             this.groupBox1.Controls.Add(this.button22);
-            this.groupBox1.Controls.Add(this.button21);
             this.groupBox1.Controls.Add(this.button20);
             this.groupBox1.Controls.Add(this.checkBox1);
             this.groupBox1.Controls.Add(this.button19);

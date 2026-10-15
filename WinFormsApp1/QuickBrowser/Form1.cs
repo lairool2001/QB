@@ -5037,16 +5037,16 @@ namespace QuickBrowser
         string old6 = "";
         private void timer1_Tick(object sender, EventArgs e)
         {
+            // 播放影片時：滑鼠移到底部控制列的範圍就顯示，移到控制列上緣以上就隱藏；
+            // 拖曳進度/音量滑桿時（按著滑鼠）不隱藏
             bool visible = false;
             if (vlcControl1.Visible)
             {
                 Point clientCoordinates = this.PointToClient(Cursor.Position);
-                visible = clientCoordinates.Y > ClientSize.Height * 0.8f
-                       && clientCoordinates.Y <= ClientSize.Height;
-            }
-            else
-            {
-                visible = false;
+                bool inBar = clientCoordinates.Y >= ClientSize.Height - groupBox1.Height
+                          && clientCoordinates.Y <= ClientSize.Height
+                          && clientCoordinates.X >= 0 && clientCoordinates.X <= ClientSize.Width;
+                visible = inBar || (groupBox1.Visible && MouseButtons != MouseButtons.None);
             }
             groupBox1.Visible = visible;
 
@@ -6055,20 +6055,33 @@ namespace QuickBrowser
         {
         }
 
+        // 播放：暫停中就接著播（倒放暫停中則繼續倒放）；倒放播放中則改回正向播放
         private void button18_Click(object sender, EventArgs e)
         {
+            bool wasPaused = pause;
             pause = false;
-            if (reverse) StopReverse(resume: false);
-            _mediaPlayer.Play();
-            _mediaPlayer.SetPause(false);
-            button20.Enabled = button21.Enabled = button22.Enabled = true;
+            if (reverse && wasPaused)
+            {
+                reverseClock.Restart();
+                timer5.Enabled = true;
+            }
+            else
+            {
+                if (reverse) StopReverse(resume: false);
+                _mediaPlayer.Play();
+                _mediaPlayer.SetPause(false);
+            }
         }
 
+        // 中止：停止播放並回到開頭，但不關閉影片畫面與控制列（按鈕一律保持可用）；
+        // 要關閉影片仍是在畫面上按滑鼠中鍵
         private void button19_Click(object sender, EventArgs e)
         {
-            stopVideo();
-            pause = true;
-            button20.Enabled = button21.Enabled = button22.Enabled = false;
+            if (reverse) StopReverse(resume: false);
+            _mediaPlayer.Stop();
+            pause = false;
+            progress = 0;
+            trackBar2.Value = trackBar2.Minimum;
         }
 
         private void button20_Click(object sender, EventArgs e)

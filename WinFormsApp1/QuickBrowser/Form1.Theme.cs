@@ -83,6 +83,8 @@ namespace QuickBrowser
             // 操作模式色會改變欄位底色，需重畫外框
             richTextBox2.BackColorChanged += (s, e) => InvalidateField(richTextBox2);
             // 影片元件第一次顯示時才建立視窗，會被插到影片控制列上方；控制列每次出現都提到最前
+            // 控制列浮在影片上（不停靠，顯示/隱藏時影片大小不變）。
+            // 影片元件第一次顯示時才建立視窗，會被插到控制列上方；控制列每次出現都提到最前
             groupBox1.VisibleChanged += (s, e) =>
             {
                 if (groupBox1.Visible) groupBox1.BringToFront();
