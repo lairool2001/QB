@@ -8,8 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Media.TextFormatting;
-using System.Windows.Shapes;
 using static System.Windows.Forms.LinkLabel;
 using Rectangle = System.Drawing.Rectangle;
 

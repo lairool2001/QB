@@ -734,7 +734,12 @@ namespace Amib.Threading.Internal
                             Thread executionThread = Interlocked.CompareExchange(ref _executingThread, null, _executingThread);
                             if (null != executionThread)
                             {
+#if NETCOREAPP
+                                // .NET Core / .NET 8 不支援 Thread.Abort：工作項目標記為已取消並通知完成，
+                                // 實際執行中的程式碼會自行跑完（可用 SmartThreadPool.IsWorkItemCanceled 提早結束）
+#else
                                 executionThread.Abort(); // "Cancel"
+#endif
                                 success = true;
                                 signalComplete = true;
                             }

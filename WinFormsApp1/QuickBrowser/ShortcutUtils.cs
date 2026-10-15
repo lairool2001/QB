@@ -41,13 +41,10 @@ public static class ShortcutUtils
 
     static string ResolveShortcut(string filePath)
     {
-        // IWshRuntimeLibrary is in the COM library "Windows Script Host Object Model"
-        IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
-
         try
         {
-            IWshRuntimeLibrary.IWshShortcut shortcut = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(filePath);
-            return shortcut.TargetPath;
+            dynamic shortcut = QuickBrowser.ShellLink.Open(filePath);
+            return (string)shortcut.TargetPath;
         }
         catch (COMException)
         {

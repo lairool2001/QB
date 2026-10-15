@@ -1,5 +1,5 @@
 
-#if !(_WINDOWS_CE) && !(_SILVERLIGHT)
+#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !NETCOREAPP
 
 using System;
 using System.Diagnostics;
@@ -134,5 +134,25 @@ namespace Amib.Threading.Internal
 	}
 
 	#endregion
+}
+#elif NETCOREAPP
+// .NET Core / .NET 8 沒有 LogicalCallContext 與 HttpContext.Current（System.Web），
+// 只有在 STPStartInfo.UseCallerCallContext / UseCallerHttpContext 開啟時才會用到（本專案未使用），保留空實作讓程式可編譯
+namespace Amib.Threading.Internal
+{
+	internal class CallerThreadContext
+	{
+		public bool CapturedCallContext => false;
+		public bool CapturedHttpContext => false;
+
+		public static CallerThreadContext Capture(bool captureCallContext, bool captureHttpContext)
+		{
+			return new CallerThreadContext();
+		}
+
+		public static void Apply(CallerThreadContext callerThreadContext)
+		{
+		}
+	}
 }
 #endif

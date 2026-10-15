@@ -110,14 +110,7 @@ namespace QuickBrowser
         }
         public Form1 StartNewForm(string path)
         {
-            Form1 form1 = Form1.getForm1();
-            Form1.SetForegroundWindow(form1.Handle.ToInt32());
-            form1.WindowState = FormWindowState.Normal;
-            form1.Top = 0;
-            form1.Show();
-            form1.goOrGlobalGo(path);
-            form1.Focus();
-            return form1;
+            return Form1.openNewWindow(path);
         }
         public void mainMouseWheel(int delta)
         {
@@ -327,7 +320,7 @@ namespace QuickBrowser
                     Application.DoEvents();
                     Thread.Sleep(1);
                 }
-                listenOpen.Abort();
+                // listenOpen 已在上面等到結束（exit = true）；.NET 8 不支援 Thread.Abort
 
 
                 //smartThreadPool.WaitForIdle();

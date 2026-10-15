@@ -8,7 +8,6 @@ using System.Drawing.Imaging;
 using System.Threading;
 using Amib.Threading;
 using Action = Amib.Threading.Action;
-using System.Windows.Controls;
 using System.Diagnostics;
 using System.Windows;
 
@@ -48,7 +47,8 @@ namespace QuickBrowser
         void newGraphic()
         {
             if (drawPanel.Width == 0 || drawPanel.Height == 0) return;
-            refreshThread?.Abort();
+            // 讓舊的刷新執行緒自行結束（.NET 8 不支援 Thread.Abort）
+            refreshGeneration++;
             Bitmap bitmap = new Bitmap(drawPanel.Width, drawPanel.Height);
             drawPanel.Image = bitmap;
             g = Graphics.FromImage(drawPanel.Image);
@@ -441,7 +441,9 @@ namespace QuickBrowser
         private float totalScroll;
         private float totalScroll2;
 
-        private bool refreshing;
+        private volatile bool refreshing;
+        // 每次重建畫布或隱藏時遞增；刷新執行緒發現世代變了就自行結束
+        private volatile int refreshGeneration;
         private void LoopPicture_VisibleChanged(object sender, EventArgs e3)
         {
             refreshing = Visible;
@@ -449,10 +451,13 @@ namespace QuickBrowser
             {
                 newGraphic();
                 Action refresh = drawPanel.Refresh;
+                int generation = refreshGeneration;
                 refreshThread = new Thread(new ThreadStart(() =>
                 {
-                    while (refreshing)
+                    while (refreshing && generation == refreshGeneration)
                     {
+                        try
+                        {
                         int add = scroll;
                         if (totalScroll2 > totalScroll)
                         {
@@ -471,11 +476,17 @@ namespace QuickBrowser
                                 totalScroll = totalScroll2;
                             }
                         }
-                        if (refreshing)
+                        if (refreshing && generation == refreshGeneration)
                         {
                             draw();
                         }
                         Invoke(refresh);
+                        }
+                        catch (Exception ex) when (ex is ObjectDisposedException || ex is ArgumentException || ex is InvalidOperationException)
+                        {
+                            // 畫布已被重建或釋放（隱藏/重新配置時），結束這條舊執行緒
+                            break;
+                        }
                         /*if (triggerDraw)
                         {
                             draw();
@@ -490,7 +501,7 @@ namespace QuickBrowser
             }
             if (!Visible)
             {
-                refreshThread?.Abort();
+                refreshGeneration++;
                 g.Dispose();
                 var e = pathToDraw.GetEnumerator();
                 while (e.MoveNext())

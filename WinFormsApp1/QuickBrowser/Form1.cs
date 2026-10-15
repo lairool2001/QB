@@ -26,7 +26,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Shapes;
 using TsudaKageyu;
 using WebPWrapper.WinForms;
 using static unvell.D2DLib.WinForm.Win32;
@@ -34,7 +33,6 @@ using Action = Amib.Threading.Action;
 using BorderStyle = System.Windows.Forms.BorderStyle;
 using Exception = System.Exception;
 using Image = System.Drawing.Image;
-using iwwsh = IWshRuntimeLibrary;
 using Path = System.IO.Path;
 using Rectangle = System.Drawing.Rectangle;
 
@@ -1325,7 +1323,6 @@ namespace QuickBrowser
         }
         string consoleDigital = "", maxConsoleDigital = "";
         volatile float scrollY;
-        iwwsh.WshShell shell = new iwwsh.WshShell(); //Create a new WshShell Interface
         private void showDisk()
         {
             isDisk = true;
@@ -1753,16 +1750,15 @@ namespace QuickBrowser
                 try
                 {
                     // 建議用 COM 物件讀取法
-                    IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
-                    IWshRuntimeLibrary.IWshShortcut shortcut = (IWshRuntimeLibrary.IWshShortcut)
-                        shell.CreateShortcut(file);
-
-                    if (!string.IsNullOrEmpty(shortcut.TargetPath))
-                        return shortcut.TargetPath;
+                    dynamic shortcut = ShellLink.Open(file);
+                    string targetPath = shortcut.TargetPath;
+                    if (!string.IsNullOrEmpty(targetPath))
+                        return targetPath;
 
                     // 有可能只解析到工作路徑等，酌情補充
-                    if (!string.IsNullOrEmpty(shortcut.WorkingDirectory))
-                        return shortcut.WorkingDirectory;
+                    string workingDirectory = shortcut.WorkingDirectory;
+                    if (!string.IsNullOrEmpty(workingDirectory))
+                        return workingDirectory;
 
                     // 若 TargetPath 取不到，可加 Binary 兜底
                 }
@@ -3140,6 +3136,28 @@ namespace QuickBrowser
         bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
         private bool going = false;
         const int frameMilliseconds = 7;
+        // 沒有東西在動時的更新間隔：作用中視窗 20fps、背景視窗 4fps（縮圖載入等仍會在這個間隔內出現）
+        const int idleFrameMilliseconds = 50;
+        const int backgroundFrameMilliseconds = 250;
+
+        /// <summary>
+        /// 自適應幀率：有重畫需求（捲動、拖曳、框選、動畫）時約 144fps；閒置時降頻。
+        /// 原本每個視窗都持續全速重畫，所有視窗共用一條 UI 執行緒，開到第四個視窗就會卡。
+        /// 以 2ms 為單位等待，一有重畫需求立刻醒來。
+        /// </summary>
+        void waitNextFrame(long frameStart, bool requested)
+        {
+            int target = requested ? frameMilliseconds
+                       : windowIsActive ? idleFrameMilliseconds
+                       : backgroundFrameMilliseconds;
+            while (!exit)
+            {
+                int spent = (int)((frameClock.ElapsedTicks - frameStart) * 1000 / Stopwatch.Frequency);
+                if (spent >= target) break;
+                if (toDraw && spent >= frameMilliseconds) break;
+                Thread.Sleep(Math.Min(2, Math.Max(1, target - spent)));
+            }
+        }
         static readonly Stopwatch frameClock = Stopwatch.StartNew();
 
         [DllImport("winmm.dll")] static extern uint timeBeginPeriod(uint period);
@@ -3160,12 +3178,12 @@ namespace QuickBrowser
                 try
                 {
                     long frameStart = frameClock.ElapsedTicks;
+                    // insideDraw 開頭會清掉 toDraw，先記下這一幀是不是有人要求重畫
+                    bool requested = toDraw;
                     insideDraw();
                     var ia = drawPanel.BeginInvoke(refresh);
                     drawPanel.EndInvoke(ia);
-                    // 固定約 144fps 的節奏（搭配 timeBeginPeriod(1) 讓 Sleep 準確），避免幀間隔忽長忽短
-                    int spent = (int)((frameClock.ElapsedTicks - frameStart) * 1000 / Stopwatch.Frequency);
-                    Thread.Sleep(Math.Max(1, frameMilliseconds - spent));
+                    waitNextFrame(frameStart, requested);
                 }
                 catch (Exception ex)
                 {
@@ -3828,6 +3846,14 @@ namespace QuickBrowser
             {
                 button6_Click(sender, e);
             }
+            // Ctrl+N：開新視窗到首頁。放在文字框判斷之前，游標在路徑列等欄位時也有效
+            if (e.KeyCode == Keys.N && e.Control)
+            {
+                openNewWindow(Form1.qbSetting.home);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
             if (richTextBox1.Focused || richTextBox3.Focused || richTextBox5.Focused || richTextBox6.Focused || richTextBox7.Focused)
             {
                 return;
@@ -3879,16 +3905,6 @@ namespace QuickBrowser
                         }
 
                         setToDraw();
-                    }
-
-                    break;
-                case Keys.N:
-                    if (e.Control)
-                    {
-                        var newForm1 = getForm1();
-                        //newForm1.BackColor = Color.LightGray;
-                        newForm1.Show();
-                        newForm1.go(Form1.qbSetting.home);
                     }
 
                     break;
@@ -4144,6 +4160,23 @@ namespace QuickBrowser
         }
         public static List<Form1> formz = new List<Form1>();
 
+        /// <summary>
+        /// 開新視窗並前往指定路徑（Ctrl+N 與系統匣「New Form」共用）：
+        /// 取用或建立視窗、拉到最前面、還原為一般大小、置頂排列，並以 goOrGlobalGo 載入（含該資料夾的狀態）
+        /// </summary>
+        public static Form1 openNewWindow(string path)
+        {
+            Form1 form1 = getForm1();
+            SetForegroundWindow(form1.Handle.ToInt32());
+            form1.WindowState = FormWindowState.Normal;
+            form1.Top = 0;
+            form1.Show();
+            form1.goOrGlobalGo(path);
+            form1.Activate();
+            form1.Focus();
+            return form1;
+        }
+
         public static Form1 getForm1(bool open = true)
         {
             if (closedForms.Count == 0)
@@ -4181,8 +4214,7 @@ namespace QuickBrowser
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(1);
             }
-            drawThread.Abort();
-            scrollSmoothMove.Abort();
+            // 兩條執行緒已在上面等到結束（exit = true）；.NET 8 不支援 Thread.Abort
             Close();
         }
 
@@ -4379,7 +4411,12 @@ namespace QuickBrowser
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            scrollBarHover = hitRightScrollBar(e.Location);
+            bool hover = hitRightScrollBar(e.Location);
+            if (hover != scrollBarHover)
+            {
+                scrollBarHover = hover;
+                toDraw = true;
+            }
             //right scroll bar
             if (e.Button == MouseButtons.Left)
             {

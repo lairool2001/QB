@@ -14,6 +14,8 @@ namespace QuickBrowser
     public partial class Form1
     {
         WindowChrome chrome;
+        // 視窗是否為作用中視窗（決定閒置時的重畫頻率）
+        volatile bool windowIsActive;
         // 拖曳縮放時約 30ms 同步一次，避免每個 SizeChanged 都重建點陣圖
         readonly Timer liveResizeTimer = new Timer { Interval = 30 };
 
@@ -39,6 +41,8 @@ namespace QuickBrowser
         void ApplyModernUi()
         {
             chrome = new WindowChrome(this);
+            Activated += (s, e) => { windowIsActive = true; setToDraw(); };
+            Deactivate += (s, e) => windowIsActive = false;
             ResizeRedraw = true;
             // 建立 handle 時標題列併入工作區會改變尺寸，但 Load 還沒算出 pictureBoxWidthLess；
             // Load 之前先拔掉 SizeChanged / Resize，否則內容區會被拉到整個視窗寬
@@ -310,6 +314,10 @@ namespace QuickBrowser
             }
 
             g.SmoothingMode = oldSmoothing;
+
+            // 捲軸的變粗/淡出動畫還沒結束時，要求下一幀以全速重畫，動畫才會順
+            if (Math.Abs(hotTarget - scrollBarHot) > 0.01f || Math.Abs(awakeTarget - scrollBarAwake) > 0.01f)
+                toDraw = true;
         }
 
         void DrawCard(Graphics g, Rectangle clip, Control[] members, string caption)

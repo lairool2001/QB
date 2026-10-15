@@ -48,6 +48,12 @@ namespace QuickBrowser
                 //MessageBox.Show("Same Program has started.");
                 return;
             }
+#if NETCOREAPP
+            // .NET 8 的 WinForms 預設會感知 DPI、預設字型改成 Segoe UI；
+            // 版面與自繪介面都以 .NET Framework 的行為（不感知 DPI、Microsoft Sans Serif 8.25）設計，維持一致
+            Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
+            Application.SetDefaultFont(new System.Drawing.Font("Microsoft Sans Serif", 8.25f));
+#endif
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             var f = new FormMain();

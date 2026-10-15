@@ -951,7 +951,9 @@ namespace Amib.Threading
 					{
 						try 
 						{
-                            thread.Abort(); // Shutdown
+#if !NETCOREAPP
+                            thread.Abort(); // Shutdown (.NET 8 does not support Thread.Abort; the thread ends on its own)
+#endif
 						}
 						catch(SecurityException e)
 						{
@@ -1356,7 +1358,12 @@ namespace Amib.Threading
         {
             if (IsWorkItemCanceled)
             {
+#if NETCOREAPP
+                // .NET 8 does not support Thread.Abort; end this work item with a cancellation exception instead
+                throw new OperationCanceledException();
+#else
                 Thread.CurrentThread.Abort();
+#endif
             }
         }
 

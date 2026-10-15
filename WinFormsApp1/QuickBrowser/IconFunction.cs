@@ -1,5 +1,4 @@
-﻿using IWshRuntimeLibrary;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -220,8 +219,7 @@ namespace QuickBrowser
         }
         public static Icon GetLnkIcon(string lnkPath)
         {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(lnkPath);
+            dynamic shortcut = ShellLink.Open(lnkPath);
 
             // 先看捷徑有沒有自訂 icon
             string iconLocation = shortcut.IconLocation;
