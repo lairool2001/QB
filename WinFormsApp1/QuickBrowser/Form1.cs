@@ -454,14 +454,9 @@ namespace QuickBrowser
                 }
                 else if (MouseButtons == MouseButtons.Right)
                 {
-                    pictureBox2.Dock = DockStyle.None;
-                    pictureBox2.Anchor = AnchorStyles.None;
-                    pictureBox2.Width += delta;
-                    pictureBox2.Height += delta;
-                    pictureBox2.Left = Width / 2 - pictureBox2.Width / 2;
-                    pictureBox2.Top = Height / 2 - pictureBox2.Height / 2;
-                    oldMousePosX = MousePosition.X;
-                    oldMousePosY = MousePosition.Y;
+                    // 以滑鼠位置為中心、帶動畫縮放（見 Form1.Theme.cs 的 zoomImageAt）。
+                    // 不更新 oldMousePos：右鍵拖曳平移用的是 pictureBox2 座標，這裡若寫入螢幕座標會讓下一次拖曳跳一下
+                    zoomImageAt(delta, PointToClient(MousePosition));
                 }
                 else if (MouseButtons == MouseButtons.None)
                 {
@@ -734,6 +729,8 @@ namespace QuickBrowser
 
         private void resetPictureBox2()
         {
+            stopImageZoomAnimation();
+            pictureBox2.ViewRect = null;   // 回到一般顯示（換圖、旋轉、切換視窗模式時）
             pictureBox2.SizeMode = PictureBoxSizeMode.Zoom;
             foreach (Control control in Controls)
             {
@@ -757,6 +754,8 @@ namespace QuickBrowser
                 pictureBox2.Top = chromeTop;
             }
             pictureBox2.Dock = DockStyle.None;
+            // 改由 ViewRect 顯示：控制項鋪滿內容區，圖片位置不變；這樣在圖片外的空白處按住左鍵也能拖曳
+            enterImageViewMode();
         }
 
         string oldRichText = "";
@@ -862,12 +861,18 @@ namespace QuickBrowser
             //global = false;
             //textToImage.Clear();
 
+            // 換資料夾世代：.NET 8 無法中斷執行中的工作，舊資料夾的工作靠這個編號自行放棄
+#pragma warning disable CS0420 // Interlocked 本身就有記憶體屏障
+            int gen = Interlocked.Increment(ref navGen);
+#pragma warning restore CS0420
             smartThreadPool.Cancel(true);
             smartThreadPool2.Cancel(true);
             smartThreadPool3.Cancel(true);
+            sorting = false; // 被取消的舊排序不會再把它設回 false
 
             addJob(() =>
             {
+                if (gen != navGen) return;
                 going = true;
 
                 string noneProcessPath = nowPath;
@@ -1000,8 +1005,8 @@ namespace QuickBrowser
 
                         firstDrawIndex = -1;
 
-                        if (isDisk) showDisk();
-                        else if (isFolder) showFolder(nowPath);
+                        if (isDisk) showDisk(gen);
+                        else if (isFolder) showFolder(nowPath, gen);
                         if (!samePath)
                         {
                             targetScrollY = scrollY = startTargetScrollY;
@@ -1014,7 +1019,7 @@ namespace QuickBrowser
 
                         oldRichText = nowPath;
 
-                        selectOld();
+                        selectOld(gen);
                     }
                     else
                     {
@@ -1023,13 +1028,16 @@ namespace QuickBrowser
                 }
             });
         }
-        void selectOld()
+        volatile int navGen;
+        // 已列完檔案的世代編號（showFolder / showDisk 完成時設定）
+        volatile int listedGen = -1;
+        void selectOld(int gen)
         {
             addJob3(() =>
             {
-                smartThreadPool.WaitForIdle();
-                smartThreadPool2.WaitForIdle();
-                while (sorting) Thread.Sleep(1);
+                // 只等這次的列檔與排序完成，不再等整個縮圖池閒置（縮圖會一直排進來，舊資料夾的也還在跑）
+                while (gen == navGen && (listedGen != gen || sorting)) Thread.Sleep(1);
+                if (gen != navGen) return;
                 waitAllDrawOK = false;
                 loadingDraw = false;
                 histroyMode = false;
@@ -1180,14 +1188,17 @@ namespace QuickBrowser
             }
             loadingDraw = true;
 
-            smartThreadPool2.WaitForIdle();
-            addJob2(() =>
+            // 排序放在 pool3：pool2 塞滿縮圖工作，排在後面會等到縮圖全部做完
+            int sortGen = navGen;
+            addJob3(() =>
             {
+                if (sortGen != navGen) return;
                 while (job1Queue.Count > 0 || adding)
                 {
                     Thread.Sleep(1);
                 }
                 smartThreadPool.WaitForIdle();
+                if (sortGen != navGen) return;
 
                 lock (cardList)
                 {
@@ -1313,7 +1324,7 @@ namespace QuickBrowser
                     pushCardListToCache(nowPath);
                 }
 
-                sorting = false;
+                if (sortGen == navGen) sorting = false;
                 setToDraw();
 
             });
@@ -1323,7 +1334,7 @@ namespace QuickBrowser
         }
         string consoleDigital = "", maxConsoleDigital = "";
         volatile float scrollY;
-        private void showDisk()
+        private void showDisk(int gen)
         {
             isDisk = true;
             callMain(() =>
@@ -1341,6 +1352,7 @@ namespace QuickBrowser
                 {
                     var disk = diskzDrives[i];
                     //setEmptyDirectoryCache(disk);
+                    if (gen != navGen) return;
                     addAndInitDisk(i, disk);
                 }//);
                 max = diskzDrives.Length;
@@ -1348,6 +1360,7 @@ namespace QuickBrowser
                 {
                     label1.Text = maxConsoleDigital = max.ToString();
                 }));
+                if (gen == navGen) listedGen = gen;
                 setToDraw();
             });
         }
@@ -1482,7 +1495,7 @@ namespace QuickBrowser
             }
         }
         volatile bool adding;
-        void showFolder(string path, bool reset = false)
+        void showFolder(string path, int gen)
         {
             isDisk = false;
             callMain(() =>
@@ -1501,6 +1514,7 @@ namespace QuickBrowser
 
             addJob(() =>
             {
+                if (gen != navGen) return;
                 bool loadCard = false;
                 bool sorted;
                 string[] dz = null, fz = null, all = null;
@@ -1515,7 +1529,8 @@ namespace QuickBrowser
                 catch (Exception ex)
                 {
                     loadingDraw = false;
-                    Text = ex.Message;
+                    if (gen == navGen) listedGen = gen;
+                    callMain(() => Text = ex.Message);
                     System.Media.SystemSounds.Hand.Play();
                     //waitAllDrawOK = false;
                     return;
@@ -1526,6 +1541,7 @@ namespace QuickBrowser
                     adding = true;
                     for (int i = 0; i < dz.Length; i++)
                     {
+                        if (gen != navGen) { adding = false; return; }
                         addAndInitDirectoryCard(i, dz[i], dzdt[i]);
                         if (i % 50 == 0)
                         {
@@ -1534,6 +1550,7 @@ namespace QuickBrowser
                     }
                     for (int i = 0; i < fz.Length; i++)
                     {
+                        if (gen != navGen) { adding = false; return; }
                         addAndInitFileCard(dz.Length + i, fz[i], fzdt[i]);
                         if (i % 50 == 0)
                         {
@@ -1559,7 +1576,9 @@ namespace QuickBrowser
                     setToDraw();
                 }
 
+                if (gen != navGen) return;
                 sortCardByComboBox2();
+                listedGen = gen;
             });
 
         }
@@ -2147,6 +2166,7 @@ namespace QuickBrowser
             vlcControl1.Visible = true;
             // 新開的影片一律從 0° 開始（旋轉只是暫時的）
             videoRotation = 0;
+            useVideoPlayer(engineFor(0).player);
             currentVideoPath = path;
             var media = createVideoMedia(path);
             _mediaPlayer.Play(media);
@@ -2786,8 +2806,11 @@ namespace QuickBrowser
                                 card.loadingDraw = true;
                                 if (card.loadImage != null)
                                 {
+                                    int thumbGen = navGen;
                                     addJob2(() =>
                                     {
+                                        // 已換資料夾就不做舊資料夾的縮圖
+                                        if (thumbGen != navGen) { card.loadingDraw = false; return; }
                                         card.loadImage();
                                     });
                                 }
@@ -2797,8 +2820,11 @@ namespace QuickBrowser
                                 card.loadingDraw = true;
                                 if (card.loadImage != null)
                                 {
+                                    int thumbGen = navGen;
                                     addJob2(() =>
                                     {
+                                        // 已換資料夾就不做舊資料夾的縮圖
+                                        if (thumbGen != navGen) { card.loadingDraw = false; return; }
                                         card.loadImage();
                                     });
                                 }
@@ -3801,6 +3827,14 @@ namespace QuickBrowser
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            if (realKeyCode(e) == Keys.Space && pictureBox2.Visible && pictureBox2.Image != null)
+            {
+                // 看圖時按空白鍵：以動畫回到 100% 並置中
+                resetImageZoom();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
             if (realKeyCode(e) == Keys.L)
             {
                 // 看圖時按 L：暫時順時針旋轉 90°。只轉記憶體中的圖（LoadImagePure 每次都產生新的 Bitmap），
@@ -6010,8 +6044,22 @@ namespace QuickBrowser
 
         private void pictureBox2_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            // 按住右鍵拖曳移動圖片（右鍵 + 滾輪則是縮放）
+            if (e.Button == MouseButtons.Right)
             {
+                // 拖曳平移時停止縮放動畫，避免動畫把圖拉回去
+                stopImageZoomAnimation();
+                if (pictureBox2.ViewRect.HasValue)
+                {
+                    // 縮放模式：控制項固定不動，移動圖片的顯示區域
+                    var v = pictureBox2.ViewRect.Value;
+                    v.Offset(e.X - oldMousePosX, e.Y - oldMousePosY);
+                    pictureBox2.HighQuality = true;
+                    pictureBox2.ViewRect = v;
+                    oldMousePosX = e.X;
+                    oldMousePosY = e.Y;
+                    return;
+                }
                 pictureBox2.Left += e.X - oldMousePosX;
                 pictureBox2.Top += e.Y - oldMousePosY;
                 Refresh();
@@ -6195,43 +6243,79 @@ namespace QuickBrowser
         }
 
         // ── 影片旋轉（按 L）────────────────────────────────────────────
-        // VLC 3 只能在開啟影片時套用 transform 濾鏡，所以旋轉 = 記下位置與狀態 → 以新角度重新開啟 → 跳回原位置
+        // VLC 3 的 transform 濾鏡只有在建立 LibVLC 引擎時設定才會生效（逐片設定會被忽略），
+        // 所以每個角度各用一個 LibVLC + MediaPlayer（第一次用到才建立並快取）；
+        // 旋轉 = 記下位置與狀態 → 換到該角度的播放器開同一部影片 → 跳回原位置
         int videoRotation;
         string currentVideoPath;
+        LibVLC baseLibVLC;
+        MediaPlayer baseMediaPlayer;
+        Dictionary<int, (LibVLC lib, MediaPlayer player)> rotatedPlayers;
+
+        (LibVLC lib, MediaPlayer player) engineFor(int rotation)
+        {
+            if (baseMediaPlayer == null)
+            {
+                baseLibVLC = _libVLC;
+                baseMediaPlayer = _mediaPlayer;
+            }
+            if (rotation == 0) return (baseLibVLC, baseMediaPlayer);
+            if (rotatedPlayers == null) rotatedPlayers = new Dictionary<int, (LibVLC, MediaPlayer)>();
+            if (!rotatedPlayers.TryGetValue(rotation, out var engine))
+            {
+                // 硬體解碼的畫面不會經過軟體濾鏡，旋轉用的引擎改用軟體解碼
+                var lib = new LibVLC("--video-filter=transform", "--transform-type=" + rotation, "--avcodec-hw=none");
+                var player = new MediaPlayer(lib);
+                player.EndReached += MediaPlayer_EndReached;
+                player.TimeChanged += MediaPlayer_TimeChanged;
+                engine = (lib, player);
+                rotatedPlayers[rotation] = engine;
+            }
+            return engine;
+        }
+
+        /// <summary>切換影片畫面使用的播放器（不同旋轉角度）。</summary>
+        void useVideoPlayer(MediaPlayer player)
+        {
+            if (player == _mediaPlayer) return;
+            var old = _mediaPlayer;
+            int volume = old.Volume;
+            old.Stop();
+            vlcControl1.MediaPlayer = player;
+            _mediaPlayer = player;
+            if (volume >= 0) _mediaPlayer.Volume = volume;
+        }
 
         Media createVideoMedia(string path)
         {
-            var media = new Media(_libVLC, new Uri(path));
-            if (videoRotation != 0)
-            {
-                media.AddOption(":video-filter=transform");
-                media.AddOption(":transform-type=" + videoRotation);
-            }
-            return media;
+            return new Media(engineFor(videoRotation).lib, new Uri(path));
         }
 
         void rotateVideo()
         {
             if (string.IsNullOrEmpty(currentVideoPath) || _mediaPlayer.Media == null) return;
-            videoRotation = (videoRotation + 90) % 360;
 
             // 倒放中是暫停狀態、由 timer5 推進位置，重新開啟後也要維持暫停
             long time = reverse ? reversePositionMs : _mediaPlayer.Time;
             bool keepPaused = pause || reverse || _mediaPlayer.State == VLCState.Paused;
 
+            videoRotation = (videoRotation + 90) % 360;
+            var player = engineFor(videoRotation).player;
+            useVideoPlayer(player);
+
             EventHandler<EventArgs> onPlaying = null;
             onPlaying = (s, e) =>
             {
-                _mediaPlayer.Playing -= onPlaying;
+                player.Playing -= onPlaying;
                 // Playing 事件在 VLC 執行緒上，不能直接呼叫 libvlc，回到 UI 執行緒處理
                 BeginInvoke((Action)(() =>
                 {
-                    if (time > 0) _mediaPlayer.Time = time;
-                    if (keepPaused) _mediaPlayer.SetPause(true);
+                    if (time > 0) player.Time = time;
+                    if (keepPaused) player.SetPause(true);
                 }));
             };
-            _mediaPlayer.Playing += onPlaying;
-            _mediaPlayer.Play(createVideoMedia(currentVideoPath));
+            player.Playing += onPlaying;
+            player.Play(createVideoMedia(currentVideoPath));
         }
 
         bool reverse = false;

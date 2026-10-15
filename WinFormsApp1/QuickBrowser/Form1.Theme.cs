@@ -130,6 +130,165 @@ namespace QuickBrowser
             tip.SetToolTip(trackBar3, "音量");
         }
 
+        // ── 看圖縮放（右鍵 + 滾輪）────────────────────────────────────────
+        // 以滑鼠位置為中心：滑鼠底下的那一點縮放後仍在滑鼠底下；每格約 18%（倍率縮放，大小圖手感一致）。
+        // 第一次縮放時把 pictureBox2 固定成整個內容區，之後只改它的 ViewRect（圖片的顯示區域，可為小數）
+        // 由 ZoomPictureBox 自己畫看得到的那一塊：不移動/縮放控制項，放再大也不抖、成本固定。
+        // 動畫只對「寬度」緩動，高度由圖片比例、位置由錨點算出，錨點永遠精確停在滑鼠底下。
+        const double imageZoomStep = 1.18;
+        const double imageZoomEaseSeconds = 0.07;
+        float imageZoomWidth, imageZoomTargetWidth;   // 目前 / 目標寬度
+        PointF imageZoomAnchor;                        // 錨點（pictureBox2 座標，即滑鼠位置）
+        float imageZoomU, imageZoomV;                  // 錨點在圖片上的相對位置（0~1）
+        System.Windows.Forms.Timer imageZoomTimer;     // 第一次用到才建立
+        bool imageZoomToRect;                          // true：正在動畫到指定矩形（空白鍵回到 100% 置中）
+        RectangleF imageZoomRectTarget;
+        Stopwatch imageZoomClock;
+        double imageZoomLastTick;
+
+        float imageAspect()
+        {
+            var image = pictureBox2.Image;
+            return image == null || image.Height == 0 ? 1f : (float)image.Width / image.Height;
+        }
+
+        void zoomImageAt(int delta, Point cursor)
+        {
+            var image = pictureBox2.Image;
+            if (image == null || delta == 0) return;
+
+            if (imageZoomTimer == null)
+            {
+                imageZoomTimer = new System.Windows.Forms.Timer { Interval = 8 };
+                imageZoomTimer.Tick += (s, e) => imageZoomTick();
+                imageZoomClock = Stopwatch.StartNew();
+            }
+
+            if (!pictureBox2.ViewRect.HasValue)
+            {
+                enterImageViewMode();
+                imageZoomWidth = imageZoomTargetWidth = pictureBox2.ViewRect.Value.Width;
+            }
+
+            // 以畫面上目前的圖為基準重新定錨，動畫中途換位置滾動也不會跳
+            RectangleF view = pictureBox2.ViewRect.Value;
+            var c = new PointF(cursor.X - pictureBox2.Left, cursor.Y - pictureBox2.Top);
+            imageZoomAnchor = c;
+            imageZoomU = view.Width > 0 ? (c.X - view.X) / view.Width : 0.5f;
+            imageZoomV = view.Height > 0 ? (c.Y - view.Y) / view.Height : 0.5f;
+            if (!imageZoomTimer.Enabled || imageZoomToRect)
+            {
+                // 空白鍵的回復動畫進行中又滾輪縮放：從畫面上目前的大小接手，不跳動
+                imageZoomToRect = false;
+                imageZoomWidth = imageZoomTargetWidth = view.Width;
+            }
+
+            // 倍率，並限制大小：最小 24px，最大為原圖 32 倍或視窗 20 倍（取大者）
+            float minW = 24f;
+            float maxW = Math.Max(image.Width * 32f, ClientSize.Width * 20f);
+            float newW = (float)(imageZoomTargetWidth * Math.Pow(imageZoomStep, delta / 120.0));
+            imageZoomTargetWidth = Math.Max(minW, Math.Min(maxW, newW));
+
+            pictureBox2.HighQuality = false;   // 動畫中用快速內插
+            imageZoomLastTick = imageZoomClock.Elapsed.TotalSeconds;
+            imageZoomTimer.Start();
+        }
+
+        /// <summary>
+        /// 把看圖切到 ViewRect 顯示：算出目前實際顯示的圖片區域（Zoom 模式會等比縮放後置中），
+        /// 再把控制項鋪滿內容區，圖片看起來位置不變。之後拖曳（整個畫面都可以按住左鍵拖）與縮放都只改 ViewRect。
+        /// </summary>
+        void enterImageViewMode()
+        {
+            if (pictureBox2.Image == null || pictureBox2.ViewRect.HasValue) return;
+            float aspect = imageAspect();
+            Rectangle box = pictureBox2.Bounds;
+            float fitW = Math.Min(box.Width, box.Height * aspect);
+            float fitH = fitW / aspect;
+            var shown = new RectangleF(box.Left + (box.Width - fitW) / 2f, box.Top + (box.Height - fitH) / 2f, fitW, fitH);
+
+            var content = new Rectangle(0, chromeTop, ClientSize.Width, Math.Max(1, ClientSize.Height - chromeTop));
+            pictureBox2.Dock = DockStyle.None;
+            pictureBox2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pictureBox2.SetBounds(content.X, content.Y, content.Width, content.Height);
+            shown.Offset(-content.X, -content.Y);
+            pictureBox2.HighQuality = true;
+            pictureBox2.ViewRect = shown;
+        }
+
+        void imageZoomTick()
+        {
+            if (!pictureBox2.ViewRect.HasValue) { imageZoomTimer.Stop(); return; }
+
+            double now = imageZoomClock.Elapsed.TotalSeconds;
+            double dt = Math.Min(0.05, now - imageZoomLastTick);
+            imageZoomLastTick = now;
+            float k = (float)(1 - Math.Exp(-dt / imageZoomEaseSeconds));
+
+            if (imageZoomToRect)
+            {
+                // 位置與大小一起緩動；起點與終點比例相同，所以途中比例也不變
+                RectangleF c = pictureBox2.ViewRect.Value, tg = imageZoomRectTarget;
+                var next = new RectangleF(c.X + (tg.X - c.X) * k, c.Y + (tg.Y - c.Y) * k,
+                                          c.Width + (tg.Width - c.Width) * k, c.Height + (tg.Height - c.Height) * k);
+                bool arrived = Math.Abs(tg.X - next.X) < 0.05f && Math.Abs(tg.Y - next.Y) < 0.05f
+                            && Math.Abs(tg.Width - next.Width) < 0.05f;
+                if (arrived) next = tg;
+                pictureBox2.ViewRect = next;
+                imageZoomWidth = imageZoomTargetWidth = next.Width;
+                if (arrived)
+                {
+                    imageZoomToRect = false;
+                    imageZoomTimer.Stop();
+                    pictureBox2.HighQuality = true;
+                }
+                return;
+            }
+
+            imageZoomWidth += (imageZoomTargetWidth - imageZoomWidth) * k;
+            bool done = Math.Abs(imageZoomTargetWidth - imageZoomWidth) < 0.05f;
+            if (done) imageZoomWidth = imageZoomTargetWidth;
+
+            float w = imageZoomWidth;
+            float h = w / imageAspect();
+            pictureBox2.ViewRect = new RectangleF(imageZoomAnchor.X - imageZoomU * w, imageZoomAnchor.Y - imageZoomV * h, w, h);
+
+            if (done)
+            {
+                imageZoomTimer.Stop();
+                pictureBox2.HighQuality = true;   // 停下後用高品質重畫一次
+            }
+        }
+
+        /// <summary>空白鍵：以動畫回到 100% 並置中；原圖比視窗大時改為剛好塞進視窗。</summary>
+        void resetImageZoom()
+        {
+            var image = pictureBox2.Image;
+            if (image == null) return;
+            if (!pictureBox2.ViewRect.HasValue) enterImageViewMode();
+            if (!pictureBox2.ViewRect.HasValue) return;
+
+            if (imageZoomTimer == null)
+            {
+                imageZoomTimer = new System.Windows.Forms.Timer { Interval = 8 };
+                imageZoomTimer.Tick += (s, e) => imageZoomTick();
+                imageZoomClock = Stopwatch.StartNew();
+            }
+            // 原圖放得進視窗就 100%，放不進就縮到剛好塞進視窗（不放大）
+            float fit = Math.Min(1f, Math.Min(pictureBox2.Width / (float)image.Width, pictureBox2.Height / (float)image.Height));
+            float w = image.Width * fit, h = image.Height * fit;
+            imageZoomRectTarget = new RectangleF((pictureBox2.Width - w) / 2f, (pictureBox2.Height - h) / 2f, w, h);
+            imageZoomToRect = true;
+            pictureBox2.HighQuality = false;
+            imageZoomLastTick = imageZoomClock.Elapsed.TotalSeconds;
+            imageZoomTimer.Start();
+        }
+
+        void stopImageZoomAnimation()
+        {
+            imageZoomTimer?.Stop();
+        }
+
         // ── F12 視窗模式循環 ────────────────────────────────────────────
         // 進入最大化前記下一般視窗的位置大小，回到一般時直接套回；
         // 原本只設 WindowState = Normal，配合自訂標題列時大小會錯，檔案區也會維持填滿整個視窗
@@ -163,6 +322,10 @@ namespace QuickBrowser
             lockPictureBoxMouswDown = true;
             captureGridMargins();
 
+            // 看影片/圖片/文字/輪播時切換 F12 不能離開檢視器：先記下各檢視器的顯示狀態，切換後套回
+            bool video = vlcControl1.Visible, image = pictureBox2.Visible, text = richTextBox8.Visible, loop = loopPicture.Visible;
+            bool viewerOpen = video || image || text || loop;
+
             if (pictureBox1.Dock == DockStyle.Fill)
             {
                 // 無邊框全螢幕 → 一般
@@ -175,7 +338,8 @@ namespace QuickBrowser
                     Math.Max(1, ClientSize.Width - gridLeft - gridRightMargin),
                     Math.Max(1, ClientSize.Height - chromeTop - gridTopFromContent - gridBottomMargin));
                 padding = 20;
-                restoreControlVisible();
+                // 沒有開檢視器時才把瀏覽用的控制項還原（restoreControlVisible 會把影片等檢視器設回啟動時的隱藏狀態）
+                if (!viewerOpen) restoreControlVisible();
             }
             else if (WindowState == FormWindowState.Maximized)
             {
@@ -194,6 +358,12 @@ namespace QuickBrowser
                 WindowState = FormWindowState.Maximized;
                 pictureBox1.Dock = DockStyle.None;
             }
+
+            vlcControl1.Visible = video;
+            pictureBox2.Visible = image;
+            richTextBox8.Visible = text;
+            loopPicture.Visible = loop;
+            if (image) resetPictureBox2();   // 視窗大小變了，圖片重新置中
 
             // resetPictureBoxMain 在點陣圖大小沒變時會直接略過，導致 drawPanel 停在舊的停靠/位置；強制同步一次
             bitmapWidth = 0;

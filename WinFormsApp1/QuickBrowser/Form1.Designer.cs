@@ -65,7 +65,7 @@ namespace QuickBrowser
             this.button21 = new QuickBrowser.ModernButton();
             this.button22 = new QuickBrowser.ModernButton();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.pictureBox2 = new QuickBrowser.ZoomPictureBox();
             this.trackBar1 = new QuickBrowser.FlatTrackBar();
             this.trackBar2 = new QuickBrowser.FlatTrackBar();
             this.checkBox1 = new QuickBrowser.ToggleSwitch();
@@ -947,7 +947,7 @@ namespace QuickBrowser
         private System.Windows.Forms.PictureBox pictureBox1;
 
         /// <summary>縮圖預覽</summary>
-        private System.Windows.Forms.PictureBox pictureBox2;
+        private QuickBrowser.ZoomPictureBox pictureBox2;
 
         #endregion
 
