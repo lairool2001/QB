@@ -78,10 +78,13 @@ namespace QuickBrowser
             AddField(richTextBox7, Theme.Glyph.Picture, new Padding(32, 7, 10, 7), field);
             AddField(richTextBox5, Theme.Glyph.Filter, new Padding(32, 9, 10, 9), field);
 
+            setupCardSizeBar();
+
             navigationCard = new Control[]
             {
                 richTextBox2, button1, button12, button2, button11, richTextBox3, richTextBox4, label2,
                 button4, button17, button16, numericUpDown1, button5, comboBox2, button9, button14, button15,
+                cardSizeCaption, cardSizeBar, cardSizeValue,
             };
             actionsCard = new Control[]
             {
@@ -570,6 +573,84 @@ namespace QuickBrowser
             // 捲軸的變粗/淡出動畫還沒結束時，要求下一幀以全速重畫，動畫才會順
             if (Math.Abs(hotTarget - scrollBarHot) > 0.01f || Math.Abs(awakeTarget - scrollBarAwake) > 0.01f)
                 toDraw = true;
+        }
+
+        // ── 卡片大小拉霸（10% ~ 100%）──────────────────────────────────
+        Label cardSizeCaption, cardSizeValue;
+        FlatTrackBar cardSizeBar;
+
+        void setupCardSizeBar()
+        {
+            // 放在 Home / List / Update 那一列下面，跟它們一樣靠右上錨定
+            int top = button9.Bottom + 8;
+            int left = button9.Left, right = button15.Right;
+            var anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            cardSizeCaption = new Label
+            {
+                Text = "卡片大小", AutoSize = false, Anchor = anchor,
+                Bounds = new Rectangle(left, top, 64, 28),
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Theme.TextSecondary, BackColor = Theme.Surface,
+            };
+            cardSizeValue = new Label
+            {
+                AutoSize = false, Anchor = anchor,
+                Bounds = new Rectangle(right - 46, top, 46, 28),
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.Text, BackColor = Theme.Surface,
+            };
+            cardSizeBar = new FlatTrackBar
+            {
+                AutoSize = false, Anchor = anchor, TabStop = false,
+                Minimum = 10, Maximum = 100, SmallChange = 5, LargeChange = 10,
+                Bounds = new Rectangle(left + 66, top, right - 46 - 4 - (left + 66), 28),
+                BackColor = Theme.Surface,
+            };
+            int saved = qbSetting?.cardScale ?? 0;
+            cardSizeBar.Value = saved >= 10 && saved <= 100 ? saved : 100;
+            cardSizeValue.Text = cardSizeBar.Value + "%";
+            if (cardSizeBar.Value != 100) scale = cardSizeBar.Value / 100f;
+
+            cardSizeBar.ValueChanged += (s, e) =>
+            {
+                cardSizeValue.Text = cardSizeBar.Value + "%";
+                applyCardScale(cardSizeBar.Value / 100f);
+                if (qbSetting != null) qbSetting.cardScale = cardSizeBar.Value;
+            };
+            cardSizeBar.MouseUp += (s, e) => FormMain.saveQBSetting();
+
+            Controls.Add(cardSizeCaption);
+            Controls.Add(cardSizeBar);
+            Controls.Add(cardSizeValue);
+            var tip = Theme.CreateToolTip(components);
+            tip.SetToolTip(cardSizeBar, "檔案卡片大小");
+        }
+
+        /// <summary>改變卡片大小並保留閱讀位置（畫面頂端那張卡片維持在頂端）。</summary>
+        void applyCardScale(float newScale)
+        {
+            if (Math.Abs(newScale - scale) < 0.0001f) return;
+            float topOrdinal = 0, rowFraction = 0;
+            bool keep = getLayoutMetrics(out int oldColumns, out int oldStep, out _, out _);
+            if (keep)
+            {
+                float rowF = Math.Max(0f, (startTargetScrollY - targetScrollY) / oldStep);
+                int row = (int)rowF;
+                rowFraction = rowF - row;
+                topOrdinal = row * oldColumns;
+            }
+
+            scale = newScale;   // 檔名字型會在下次繪製時依新縮放重建
+            textToImage.Clear();   // 檔名快取圖是舊大小，清掉重做
+
+            if (keep && getLayoutMetrics(out int newColumns, out int newStep, out _, out _))
+            {
+                int newRow = (int)(topOrdinal / newColumns);
+                float y = startTargetScrollY - (newRow + rowFraction) * newStep;
+                targetScrollY = scrollY = Math.Max(scrollBottomLimit, Math.Min(scrollTopLimit, y));
+            }
+            setToDraw();
         }
 
         void DrawCard(Graphics g, Rectangle clip, Control[] members, string caption)

@@ -2563,8 +2563,10 @@ namespace QuickBrowser
         static Random random = new Random();
         ConcurrentDictionary<Image, int> imageTimer = new ConcurrentDictionary<Image, int>();
         volatile int timer = 0;
-        static Font font;
-        static Font font2;
+        // 每個視窗的卡片大小不同，字型跟著視窗走
+        Font font;
+        Font font2;
+        float fontScale;
         void insideDraw()
         {
             if (resetingGraphic)
@@ -2581,10 +2583,11 @@ namespace QuickBrowser
             double scaleRec = 1;
             Color clearColor = Color.Empty;
             Pen selectBoxPen = new Pen(Color.White, 4);
-            if (font == null || font2 == null)
+            if (font == null || font2 == null || fontScale != scale)
             {
-                font = new Font(Font.FontFamily, Math.Max(10, (Font.Size + 10) * scale));
-                font2 = new Font(Font.FontFamily, Math.Max(10, (Font.Size) * scale));
+                fontScale = scale;
+                font = new Font(Font.FontFamily, Math.Max(7, (Font.Size + 10) * scale));
+                font2 = new Font(Font.FontFamily, Math.Max(7, Math.Max(10, Font.Size * scale) * Math.Min(1f, scale)));
             }
             //g.Clear(clearColor);
             drawBackground(g);
@@ -2883,12 +2886,12 @@ namespace QuickBrowser
                             h = (int)(picH * scale);
                         }
                         float spaceX = r4.Width - w;
-                        float spaceY = r4.Height - wordBoxHeight - h - 25;
+                        float spaceY = r4.Height - (wordBoxHeight + 25) * scale - h;   // 檔名區與邊距跟著卡片大小縮放
                         rBlock.Width = w;
                         rBlock.Height = h;
                         rBlock.X += spaceX / 2;
-                        rBlock.Y += spaceY / 2 + 10;
-                        while (rBlock.Right >= r.Right - 40 || rBlock.Top <= r.Top - 80)
+                        rBlock.Y += spaceY / 2 + 10 * scale;
+                        while (rBlock.Width > 1 && (rBlock.Right >= r.Right - 40 * scale || rBlock.Top <= r.Top - 80 * scale))
                         {
                             rBlock.X += (int)(rBlock.Width * 0.05f);
                             rBlock.Y += (int)(rBlock.Height * 0.05f);
@@ -3331,14 +3334,16 @@ namespace QuickBrowser
         Action refreshPictureBox;
         DateTime drawTime = DateTime.Now;
         int drawTextCount = 10;
-        private ConcurrentDictionary<(string, Color, Color), Bitmap> textToImage = new ConcurrentDictionary<(string, Color, Color), Bitmap>();
+        // 檔名圖片快取：key 含卡片縮放，換卡片大小時整批重做（舊大小的圖會被清掉）
+        private ConcurrentDictionary<(string, Color, Color, float), Bitmap> textToImage = new ConcurrentDictionary<(string, Color, Color, float), Bitmap>();
         static StringBuilder drawSB = new StringBuilder();
         //g.DrawString(card.fileName, Font, Brushes.White, r4);
         static ConcurrentDictionary<Color, Brush> C2B = new ConcurrentDictionary<Color, Brush>();
         void drawShineString(Graphics g, string text, Font f, RectangleF rec, Color shineColor, Color backColor, float shineSize = 2)
         {
             if (string.IsNullOrEmpty(text)) return;
-            var key = (text, shineColor, backColor);
+            float keyScale = scale;
+            var key = (text, shineColor, backColor, keyScale);
             if (!textToImage.TryGetValue(key, out var image3) && DateTime.Now >= loadImageTime && loadImageCount > 0)
             {
                 image3 = textToImage[key] = null;
@@ -3358,11 +3363,13 @@ namespace QuickBrowser
                     string text2 = text;
                     const int maxCardNameLength = 40;
                     var maxLength = Math.Min(maxCardNameLength, text.Length);
-                    if (size.Height >= 40)
+                    // 檔名最多佔的高度跟著卡片縮放（至少一行）
+                    float maxNameHeight = Math.Max(f.GetHeight() * 1.2f, 40 * keyScale);
+                    if (size.Height >= maxNameHeight)
                     {
                         while (true)
                         {
-                            if (maxLength < 10 || size.Height < 40)
+                            if (maxLength < 10 || size.Height < maxNameHeight)
                             {
                                 text2 = text.Substring(0, (int)maxLength) + "...";
                                 break;
