@@ -41,6 +41,9 @@ namespace QuickBrowser
         void ApplyModernUi()
         {
             chrome = new WindowChrome(this);
+            // richTextBox2 是「輸入編號跳轉」的按鍵接收框，平常瀏覽/看圖時都是它有焦點，只會收數字與 + - *；
+            // 關掉它的輸入法，否則中文輸入法開著時 L 等字母快捷鍵會被輸入法攔走（變成 Keys.ProcessKey）
+            richTextBox2.ImeMode = ImeMode.Disable;
             Activated += (s, e) => { windowIsActive = true; setToDraw(); };
             Deactivate += (s, e) => windowIsActive = false;
             ResizeRedraw = true;
@@ -51,6 +54,7 @@ namespace QuickBrowser
             HandleCreated += (s, e) => chrome.CorrectInitialHeight();
             Load += (s, e) =>
             {
+                captureGridMargins();
                 SizeChanged += Form1_SizeChanged;
                 Resize += Form1_Resize;
                 // 視窗大小改變時即時同步檔案區（原本只在拖曳結束 ResizeEnd 才更新，最大化/還原時甚至不會更新）
@@ -124,6 +128,84 @@ namespace QuickBrowser
             tip.SetToolTip(button10, "在檔案總管開啟");
             tip.SetToolTip(richTextBox5, "篩選");
             tip.SetToolTip(trackBar3, "音量");
+        }
+
+        // ── F12 視窗模式循環 ────────────────────────────────────────────
+        // 進入最大化前記下一般視窗的位置大小，回到一般時直接套回；
+        // 原本只設 WindowState = Normal，配合自訂標題列時大小會錯，檔案區也會維持填滿整個視窗
+        Rectangle normalBoundsBeforeF12 = Rectangle.Empty;
+        // 檔案區在一般模式下的邊距（以 Load 時的版面為準）
+        int gridLeft, gridTopFromContent, gridRightMargin, gridBottomMargin;
+        bool gridMarginsCaptured;
+
+        void captureGridMargins()
+        {
+            if (gridMarginsCaptured) return;
+            if (pictureBox1.Dock != DockStyle.None || pictureBox1.Right > ClientSize.Width - 100)
+            {
+                // 版面已被全螢幕模式改過（或尚未排好）：用設計時的邊距（Form1.Designer 的檔案區位置）
+                gridLeft = 16;
+                gridTopFromContent = 72;
+                gridRightMargin = 336;
+                gridBottomMargin = 16;
+                return;
+            }
+            gridLeft = pictureBox1.Left;
+            gridTopFromContent = pictureBox1.Top - chromeTop;
+            gridRightMargin = ClientSize.Width - pictureBox1.Right;
+            gridBottomMargin = ClientSize.Height - pictureBox1.Bottom;
+            gridMarginsCaptured = true;
+        }
+
+        void cycleFullscreen()
+        {
+            loadingDraw = true;
+            lockPictureBoxMouswDown = true;
+            captureGridMargins();
+
+            if (pictureBox1.Dock == DockStyle.Fill)
+            {
+                // 無邊框全螢幕 → 一般
+                FormBorderStyle = FormBorderStyle.Sizable;   // 自訂標題列與上邊距會跟著回來
+                WindowState = FormWindowState.Normal;
+                if (!normalBoundsBeforeF12.IsEmpty) Bounds = normalBoundsBeforeF12;
+                pictureBox1.Dock = DockStyle.None;
+                pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+                pictureBox1.SetBounds(gridLeft, chromeTop + gridTopFromContent,
+                    Math.Max(1, ClientSize.Width - gridLeft - gridRightMargin),
+                    Math.Max(1, ClientSize.Height - chromeTop - gridTopFromContent - gridBottomMargin));
+                padding = 20;
+                restoreControlVisible();
+            }
+            else if (WindowState == FormWindowState.Maximized)
+            {
+                // 最大化 → 無邊框全螢幕（檔案區填滿、隱藏其他控制項）
+                WindowState = FormWindowState.Normal;
+                FormBorderStyle = FormBorderStyle.None;
+                pictureBox1.Dock = DockStyle.Fill;
+                padding = 5;
+                WindowState = FormWindowState.Maximized;
+            }
+            else
+            {
+                // 一般 → 最大化
+                normalBoundsBeforeF12 = Bounds;
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Maximized;
+                pictureBox1.Dock = DockStyle.None;
+            }
+
+            // resetPictureBoxMain 在點陣圖大小沒變時會直接略過，導致 drawPanel 停在舊的停靠/位置；強制同步一次
+            bitmapWidth = 0;
+            resetPictureBoxMain();
+            drawPanel.Dock = pictureBox1.Dock;
+            if (pictureBox1.Dock == DockStyle.None)
+                drawPanel.SetBounds(pictureBox1.Left, pictureBox1.Top, pictureBox1.Width, pictureBox1.Height);
+            Invalidate();
+            setToDraw();
+
+            lockPictureBoxMouswDown = false;
+            loadingDraw = false;
         }
 
         void AddField(Control control, string glyph, Padding pad, Func<Color> fill)

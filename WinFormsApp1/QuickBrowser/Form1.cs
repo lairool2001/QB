@@ -2145,7 +2145,10 @@ namespace QuickBrowser
             pause = false;
             stopVideo();
             vlcControl1.Visible = true;
-            var media = new Media(_libVLC, new Uri(path));
+            // 新開的影片一律從 0° 開始（旋轉只是暫時的）
+            videoRotation = 0;
+            currentVideoPath = path;
+            var media = createVideoMedia(path);
             _mediaPlayer.Play(media);
             _mediaPlayer.Time = 0;
             trackBar3.Value = _mediaPlayer.Volume = Form1.qbSetting.volume;
@@ -3555,13 +3558,14 @@ namespace QuickBrowser
 
         static Bitmap SKBitmapToBitmap(SKBitmap skBitmap)
         {
-            var bitmap = new Bitmap(skBitmap.Width, skBitmap.Height, PixelFormat.Format32bppArgb);
+            // 呼叫端需以 Bgra8888 + Premul 產生 SKBitmap：位元組順序與 GDI+ 相同，
+            // 透明度為預乘，對應 Format32bppPArgb（用非預乘格式半透明邊緣會偏暗）
+            var bitmap = new Bitmap(skBitmap.Width, skBitmap.Height, PixelFormat.Format32bppPArgb);
             var bitmapData = bitmap.LockBits(
                 new Rectangle(0, 0, bitmap.Width, bitmap.Height),
                 ImageLockMode.WriteOnly,
-                PixelFormat.Format32bppArgb);
+                PixelFormat.Format32bppPArgb);
 
-            // SkiaSharp 是 BGRA，GDI+ 也是 BGRA，直接複製
             Marshal.Copy(skBitmap.Bytes, 0, bitmapData.Scan0, skBitmap.Bytes.Length);
 
             bitmap.UnlockBits(bitmapData);
@@ -3586,7 +3590,8 @@ namespace QuickBrowser
                     SKSvg svg = new SKSvg();
                     MemoryStream stream = new MemoryStream(bytes);
                     var s = svg.Load(stream);
-                    bitmap = SKBitmapToBitmap(s.ToBitmap(SkiaSharp.SKColor.Empty, 1f, 1f, SKColorType.Rgba8888, SKAlphaType.Premul, SkiaSharp.SKColorSpace.CreateSrgb()));
+                    // 用 BGRA（與 GDI+ 相同的位元組順序）輸出；原本用 Rgba8888 會讓紅藍顛倒
+                    bitmap = SKBitmapToBitmap(s.ToBitmap(SkiaSharp.SKColor.Empty, 1f, 1f, SKColorType.Bgra8888, SKAlphaType.Premul, SkiaSharp.SKColorSpace.CreateSrgb()));
                     stream.Close();
                     svg = null;
                 }
@@ -3781,14 +3786,39 @@ namespace QuickBrowser
         }
         bool lockGlobal;
         bool global;
+        [DllImport("imm32.dll")] static extern uint ImmGetVirtualKey(IntPtr hWnd);
+        [DllImport("user32.dll")] static extern IntPtr GetFocus();
+
+        /// <summary>
+        /// 中文輸入法（IME）開啟時，字母鍵會以 Keys.ProcessKey 送來；向 IME 取回實際按下的鍵
+        /// </summary>
+        static Keys realKeyCode(KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.ProcessKey) return e.KeyCode;
+            uint vk = ImmGetVirtualKey(GetFocus());
+            return vk == 0 ? e.KeyCode : (Keys)vk;
+        }
+
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.L)
+            if (realKeyCode(e) == Keys.L)
             {
-                if (pictureBox2.Visible)
+                // 看圖時按 L：暫時順時針旋轉 90°。只轉記憶體中的圖（LoadImagePure 每次都產生新的 Bitmap），
+                // 不會改到檔案；換到別張圖再回來就是原本的方向
+                if (vlcControl1.Visible)
                 {
+                    // 播放影片時：影片順時針轉 90°（重新開啟影片，位置與暫停狀態不變）
+                    rotateVideo();
                 }
-
+                else if (pictureBox2.Visible && pictureBox2.Image != null)
+                {
+                    pictureBox2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    resetPictureBox2();   // 寬高互換，重新計算大小與置中
+                    pictureBox2.Invalidate();
+                }
+                // 標記已處理，避免同一次按鍵又被圖片控制項的 KeyDown 再轉一次
+                e.Handled = true;
+                e.SuppressKeyPress = true;
                 return;
             }
             if (e.KeyCode == Keys.F11)
@@ -3797,49 +3827,8 @@ namespace QuickBrowser
             }
             if (e.KeyCode == Keys.F12)
             {
-                //Enabled = false;
-                loadingDraw = true;
-                lockPictureBoxMouswDown = true;
-                if (pictureBox1.Dock == DockStyle.Fill)
-                {
-                    FormBorderStyle = FormBorderStyle.Sizable;
-                    WindowState = FormWindowState.Normal;
-                    pictureBox1.Dock = DockStyle.None;
-                    pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-                    //pictureBox1.BorderStyle = BorderStyle.None;
-                    padding = 20;
-                    pictureBox1.Width = Width - pictureBoxWidthLess;
-                }
-                else if (WindowState == FormWindowState.Maximized)
-                {
-                    WindowState = FormWindowState.Normal;
-                    //pictureBox1.BorderStyle = BorderStyle.None;
-                    FormBorderStyle = FormBorderStyle.None;
-                    pictureBox1.Dock = DockStyle.Fill;
-                    padding = 5;
-                    WindowState = FormWindowState.Maximized;
-                }
-                else //Normal
-                {
-                    if (pictureBox1.Dock == DockStyle.Fill)
-                    {
-                        pictureBox1.BorderStyle = BorderStyle.None;
-                        FormBorderStyle = FormBorderStyle.None;
-                        WindowState = FormWindowState.Maximized;
-                        pictureBox1.Dock = DockStyle.Fill;
-                        padding = 5;
-                    }
-                    else
-                    {
-                        FormBorderStyle = FormBorderStyle.Sizable;
-                        WindowState = FormWindowState.Maximized;
-                        pictureBox1.Dock = DockStyle.None;
-                    }
-                }
-                resetPictureBoxMain();
-                //Enabled = true;
-                lockPictureBoxMouswDown = false;
-                loadingDraw = false;
+                // 一般 → 最大化 → 無邊框全螢幕 → 一般（細節見 Form1.Theme.cs 的 cycleFullscreen）
+                cycleFullscreen();
                 return;
             }
             if (e.KeyCode == Keys.J && e.Control)
@@ -6203,6 +6192,46 @@ namespace QuickBrowser
                 }));
             }
             catch (InvalidOperationException) { }
+        }
+
+        // ── 影片旋轉（按 L）────────────────────────────────────────────
+        // VLC 3 只能在開啟影片時套用 transform 濾鏡，所以旋轉 = 記下位置與狀態 → 以新角度重新開啟 → 跳回原位置
+        int videoRotation;
+        string currentVideoPath;
+
+        Media createVideoMedia(string path)
+        {
+            var media = new Media(_libVLC, new Uri(path));
+            if (videoRotation != 0)
+            {
+                media.AddOption(":video-filter=transform");
+                media.AddOption(":transform-type=" + videoRotation);
+            }
+            return media;
+        }
+
+        void rotateVideo()
+        {
+            if (string.IsNullOrEmpty(currentVideoPath) || _mediaPlayer.Media == null) return;
+            videoRotation = (videoRotation + 90) % 360;
+
+            // 倒放中是暫停狀態、由 timer5 推進位置，重新開啟後也要維持暫停
+            long time = reverse ? reversePositionMs : _mediaPlayer.Time;
+            bool keepPaused = pause || reverse || _mediaPlayer.State == VLCState.Paused;
+
+            EventHandler<EventArgs> onPlaying = null;
+            onPlaying = (s, e) =>
+            {
+                _mediaPlayer.Playing -= onPlaying;
+                // Playing 事件在 VLC 執行緒上，不能直接呼叫 libvlc，回到 UI 執行緒處理
+                BeginInvoke((Action)(() =>
+                {
+                    if (time > 0) _mediaPlayer.Time = time;
+                    if (keepPaused) _mediaPlayer.SetPause(true);
+                }));
+            };
+            _mediaPlayer.Playing += onPlaying;
+            _mediaPlayer.Play(createVideoMedia(currentVideoPath));
         }
 
         bool reverse = false;
