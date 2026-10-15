@@ -92,6 +92,9 @@ namespace QuickBrowser
             _mediaPlayer = new MediaPlayer(_libVLC);
             vlcControl1.MediaPlayer = _mediaPlayer;
             _mediaPlayer.EndReached += MediaPlayer_EndReached;
+            _mediaPlayer.TimeChanged += MediaPlayer_TimeChanged;
+            loopTimer.Tick += loopTimer_Tick;
+            loopTimer.Start();
             // 影片已播完才打開「無限循環」時，直接從頭再播
             checkBox1.CheckedChanged += (s, e) =>
             {
@@ -6106,7 +6109,48 @@ namespace QuickBrowser
             }
         }
 
-        // 播到結尾時由 VLC 通知；原本每 100ms 檢查「已播 95% 且仍在播放」，
+        // 無縫循環：在影片結束前一點點就跳回開頭。等到真的播完（EndReached），VLC 已關掉畫面輸出，
+        // 重播會先黑一格；播放中直接 seek 則畫面輸出不中斷。
+        // VLC 回報的播放時間每隔數百毫秒才更新一次，所以用「上次回報時間 + 經過時間」推算目前位置，
+        // 每 15ms 檢查一次，在結尾前 loopLeadMs 跳回開頭
+        const long loopLeadMs = 80;
+        long lastVlcTime = -1, lastVlcStamp;
+        bool loopSeekPending;
+        readonly System.Windows.Forms.Timer loopTimer = new System.Windows.Forms.Timer { Interval = 15 };
+
+        private void MediaPlayer_TimeChanged(object sender, MediaPlayerTimeChangedEventArgs e)
+        {
+            System.Threading.Interlocked.Exchange(ref lastVlcStamp, Stopwatch.GetTimestamp());
+            System.Threading.Interlocked.Exchange(ref lastVlcTime, e.Time);
+        }
+
+        void loopTimer_Tick(object sender, EventArgs e)
+        {
+            if (!checkBox1.Checked || reverse || pause || !vlcControl1.Visible || _mediaPlayer.Media == null) return;
+            long duration = _mediaPlayer.Media.Duration;
+            long t = System.Threading.Interlocked.Read(ref lastVlcTime);
+            if (duration <= loopLeadMs * 2 || t < 0) return;
+
+            // 跳回開頭後，等 VLC 回報的時間真的回到前半段才允許下一次
+            if (loopSeekPending)
+            {
+                if (t < duration / 2) loopSeekPending = false;
+                return;
+            }
+            if (!_mediaPlayer.IsPlaying) return;
+
+            long stamp = System.Threading.Interlocked.Read(ref lastVlcStamp);
+            double elapsed = (Stopwatch.GetTimestamp() - stamp) * 1000.0 / Stopwatch.Frequency;
+            double predicted = t + Math.Min(elapsed, 1000) * _mediaPlayer.Rate;
+            if (predicted >= duration - loopLeadMs)
+            {
+                loopSeekPending = true;
+                _mediaPlayer.Time = 0;
+                trackBar2.Value = trackBar2.Minimum;
+            }
+        }
+
+        // 播到結尾時由 VLC 通知（上面的提前跳回沒趕上時的備援）；原本每 100ms 檢查「已播 95% 且仍在播放」，
         // VLC 的時間更新較粗，常常錯過那段時間就直接播完停住，所以循環兩三次就會停
         private void MediaPlayer_EndReached(object sender, EventArgs e)
         {
