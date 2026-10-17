@@ -97,6 +97,7 @@ namespace QuickBrowser
             public const string Sort       = "\uE8CB";
             public const string Display    = "\uE740";
             public const string Picture    = "\uE8B9";
+            public const string Lock       = "\uE72E";
             public const string Filter     = "\uE71C";
         }
 

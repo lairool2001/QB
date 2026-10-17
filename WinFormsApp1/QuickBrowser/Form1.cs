@@ -57,15 +57,15 @@ namespace QuickBrowser
                 return _loopPicture;
             }
         }
-        private PictureBox _drawPanel;
+        private LayeredPictureBox _drawPanel;
 
-        public PictureBox drawPanel
+        public LayeredPictureBox drawPanel
         {
             get
             {
                 if (_drawPanel == null)
                 {
-                    _drawPanel = new PictureBox();
+                    _drawPanel = new LayeredPictureBox();
                     _drawPanel.Dock = pictureBox1.Dock;
                     _drawPanel.SetBounds(pictureBox1.Bounds.X, pictureBox1.Bounds.Y, pictureBox1.Bounds.Width, pictureBox1.Bounds.Height);
                     _drawPanel.MouseMove += pictureBox1_MouseMove;
@@ -74,6 +74,11 @@ namespace QuickBrowser
                     _drawPanel.MouseLeave += (s, e) => scrollBarHover = false;
                     _drawPanel.TabStop = false;
                     Controls.Add(_drawPanel);
+                    // 網頁背景跟著檔案區的位置、大小、顯示狀態走
+                    _drawPanel.LocationChanged += (s, e) => syncWebBackground();
+                    _drawPanel.SizeChanged += (s, e) => syncWebBackground();
+                    _drawPanel.DockChanged += (s, e) => syncWebBackground();
+                    _drawPanel.VisibleChanged += (s, e) => syncWebBackground();
                 }
 
                 return _drawPanel;
@@ -554,6 +559,7 @@ namespace QuickBrowser
                 if (selectCard.isImage)
                 {
                     pictureBox2.Image = LoadImagePure(selectCard.fullPath);
+                    currentImagePath = selectCard.fullPath;
                     resetPictureBox2();
                     pictureBox2.Refresh();
                     setToDraw();
@@ -895,6 +901,7 @@ namespace QuickBrowser
                              drawing = true;
                              stopVideo();
                              pictureBox2.Image = LoadImagePure(noneProcessPath);
+                             currentImagePath = noneProcessPath;
                              pictureBox2.Show();
                              TopMost = true;
                              SetForegroundWindow(Handle.ToInt32());
@@ -1059,7 +1066,12 @@ namespace QuickBrowser
 
                 callMain(() =>
                 {
-                    if (qbSetting.folderToImageShowType.TryGetValue(nowPath, out var index))
+                    if (qbSetting.lockedImageShowType is int lockedShowType)
+                    {
+                        // 背景縮放方式已鎖定：每個資料夾都用同一個
+                        comboBox1.SelectedIndex = lockedShowType;
+                    }
+                    else if (qbSetting.folderToImageShowType.TryGetValue(nowPath, out var index))
                     {
                         comboBox1.SelectedIndex = index;
                     }
@@ -1081,7 +1093,8 @@ namespace QuickBrowser
         private void showBackgroundPathText(string nowPath)
         {
             //更新背景圖
-            if (qbSetting.folderToBackgroundPath.TryGetValue(nowPath, out var path))
+            string path = backgroundPathFor(nowPath);
+            if (path != null)
             {
                 lockRichTextBox7 = true;
                 richTextBox7.Text = path;
@@ -1089,16 +1102,47 @@ namespace QuickBrowser
             }
         }
         volatile float lockTime = 0;
+        /// <summary>背景已鎖定（QBSetting.lockedBackground）時，所有資料夾都用同一個背景。</summary>
+        bool backgroundLocked => !string.IsNullOrEmpty(qbSetting?.lockedBackground);
+
+        /// <summary>這個資料夾實際要用的背景路徑：鎖定時用鎖定的背景，否則用資料夾自己的設定。</summary>
+        string backgroundPathFor(string folder)
+        {
+            if (backgroundLocked) return qbSetting.lockedBackground;
+            return qbSetting.folderToBackgroundPath.TryGetValue(folder, out var path) ? path : null;
+        }
+
         private void updateFolderBackground(string nowPath)
         {
-            if (qbSetting.folderToBackgroundPath.ContainsKey(nowPath))
+            bool locked = backgroundLocked;
+            string bgPath = backgroundPathFor(nowPath);
+            // 背景路徑是網址或影片檔：改用 WebView2 當背景
+            string webUrl = null;
+            if (bgPath != null)
             {
-                string newBackgroundImagePath = qbSetting.folderToBackgroundPath[nowPath];
+                if (isWebBackgroundUrl(bgPath)) webUrl = bgPath.Trim();
+                else webUrl = videoBackgroundPath(bgPath);
+            }
+            if (IsHandleCreated) BeginInvoke(new Action(() => setWebBackground(webUrl)));
+            if (webUrl != null)
+            {
+                backgroundImagePath = "";
+                background = null;
+                addJob(() =>
+                {
+                    setGoodBitmapAndResetGraphic();
+                    setToDraw();
+                });
+                return;
+            }
+
+            if (bgPath != null)
+            {
+                string newBackgroundImagePath = bgPath;
                 if (File.Exists(newBackgroundImagePath))
                 {
                     loadingDraw = true;
                     if (backgroundImagePath == newBackgroundImagePath) return;
-                    qbSetting.folderToBackgroundPath[nowPath] = newBackgroundImagePath;
                     backgroundImagePath = newBackgroundImagePath;
                     addJob(() =>
                     {
@@ -1117,8 +1161,12 @@ namespace QuickBrowser
                             background = null;
                         }
                     }
-                    string a;
-                    qbSetting.folderToBackgroundPath.TryRemove(nowPath, out a);
+                    // 資料夾自己的背景檔已不存在就移除設定（鎖定的背景不動，使用者可能只是暫時拔掉磁碟）
+                    if (!locked)
+                    {
+                        string a;
+                        qbSetting.folderToBackgroundPath.TryRemove(nowPath, out a);
+                    }
                     setToDraw();
                 }
             }
@@ -1441,6 +1489,8 @@ namespace QuickBrowser
                 try
                 {
                     ProcessStartInfo info = new ProcessStartInfo(startPath);
+                    // .NET 8 預設不走殼層，非 exe（影片、文件…）會開不起來；改回用檔案關聯開啟
+                    info.UseShellExecute = true;
                     info.WorkingDirectory = Path.GetDirectoryName(startPath);
                     Process process = new Process();
                     process.StartInfo = info;
@@ -2127,6 +2177,7 @@ namespace QuickBrowser
                 {
                     if (!File.Exists(card.fullPath)) return;
                     pictureBox2.Image = LoadImagePure(card.fullPath);
+                    currentImagePath = card.fullPath;
                     resetPictureBox2();
                 };
             }
@@ -2593,8 +2644,11 @@ namespace QuickBrowser
             drawBackground(g);
             if (loadingDraw || waitAllDrawOK)
             {
+                // 載入超過 0.15 秒才顯示 loading 畫面（太快的載入不閃一下）；
+                // 原本用幀數判斷，閒置降幀時要好幾秒才看得到
+                if (timer == 0 || loadingShownClock == null) (loadingShownClock ??= new Stopwatch()).Restart();
                 timer++;
-                if (timer > 100)
+                if (loadingShownClock.ElapsedMilliseconds > 150)
                 {
                     waitLoadingAnimation(g);
                 }
@@ -2874,30 +2928,20 @@ namespace QuickBrowser
                             sameSize = (card.imageWidth < 256 && card.imageHeight < 256);
                         }
 
-                        float wh = (float)card.imageWidth / card.imageHeight;
-                        if (wh > 1)
-                        {
-                            w = (int)(picW * scale);
-                            h = (int)(picW / wh * scale);
-                        }
-                        else
-                        {
-                            w = (int)(picH * wh * scale);
-                            h = (int)(picH * scale);
-                        }
-                        float spaceX = r4.Width - w;
-                        float spaceY = r4.Height - (wordBoxHeight + 25) * scale - h;   // 檔名區與邊距跟著卡片大小縮放
+                        // 圖片緊接在檔名下方：檔名區的高度用檔名實際畫出來的高度（一行或兩行），
+                        // 圖片上緣貼著檔名下緣、靠上對齊，在剩下的區域內等比縮放，不會超出卡片
+                        float nameZone = 5f + cardNameHeight(card.fileName, r.Width * 0.8f) + 3 * scale;
+                        // 底部留一段空白：跟下一列的檔名分開，一眼看得出檔名和縮圖是同一組
+                        const float cardBottomGap = 45f;
+                        RectangleF imageArea = RectangleF.FromLTRB(r4.Left, r.Top + nameZone, r4.Right, r4.Bottom - cardBottomGap * scale);
+                        float fit = Math.Min(imageArea.Width / card.imageWidth, imageArea.Height / card.imageHeight);
+                        if (fit <= 0 || float.IsNaN(fit) || float.IsInfinity(fit)) fit = 0;
+                        w = (int)(card.imageWidth * fit);
+                        h = (int)(card.imageHeight * fit);
                         rBlock.Width = w;
                         rBlock.Height = h;
-                        rBlock.X += spaceX / 2;
-                        rBlock.Y += spaceY / 2 + 10 * scale;
-                        while (rBlock.Width > 1 && (rBlock.Right >= r.Right - 40 * scale || rBlock.Top <= r.Top - 80 * scale))
-                        {
-                            rBlock.X += (int)(rBlock.Width * 0.05f);
-                            rBlock.Y += (int)(rBlock.Height * 0.05f);
-                            rBlock.Width *= 0.9f;
-                            rBlock.Height *= 0.9f;
-                        }
+                        rBlock.X = imageArea.X + (imageArea.Width - w) / 2;
+                        rBlock.Y = imageArea.Y;
                         g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
                         g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
                         g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
@@ -3165,7 +3209,10 @@ namespace QuickBrowser
                 _focusing = value;
             }
         }
-        bool pausing => (WindowState == FormWindowState.Minimized || !Visible || !focusing) && !exit;
+        // 只有最小化或看不見才暫停背景工作與繪製。原本沒有焦點也會暫停：開第二個視窗後，
+        // 失去焦點的視窗載入到一半就停住、永遠卡在 loading（滑鼠離開視窗也會被誤判成沒焦點）。
+        // 背景視窗的耗電已由自適應幀率處理（背景閒置 4fps）
+        bool pausing => (WindowState == FormWindowState.Minimized || !Visible) && !exit;
         private bool going = false;
         const int frameMilliseconds = 7;
         // 沒有東西在動時的更新間隔：作用中視窗 20fps、背景視窗 4fps（縮圖載入等仍會在這個間隔內出現）
@@ -3212,7 +3259,11 @@ namespace QuickBrowser
                     long frameStart = frameClock.ElapsedTicks;
                     // insideDraw 開頭會清掉 toDraw，先記下這一幀是不是有人要求重畫
                     bool requested = toDraw;
-                    insideDraw();
+                    // 作畫期間持有檔案區的繪圖鎖：UI 執行緒（分層模式送畫面）不會同時讀這張點陣圖
+                    lock (drawPanel.DrawLock)
+                    {
+                        insideDraw();
+                    }
                     var ia = drawPanel.BeginInvoke(refresh);
                     drawPanel.EndInvoke(ia);
                     waitNextFrame(frameStart, requested);
@@ -3316,6 +3367,13 @@ namespace QuickBrowser
 
         private void drawBackground(Graphics g)
         {
+            if (webBackgroundActive)
+            {
+                // 網頁背景模式：檔案區底色全透明，看得到下面的 WebView2。
+                // 禁止互動（YouTube）時用 alpha = 1：看不出來，但點擊會由檔案區接住，不會穿透到網頁
+                g.Clear(Color.FromArgb(webBackgroundBlockInput ? 1 : 0, 0, 0, 0));
+                return;
+            }
             g.Clear(Color.Black);
             if (background != null)
             {
@@ -3331,6 +3389,28 @@ namespace QuickBrowser
             }
         }
 
+        // 熱更新加入的欄位不會跑初始值，使用時才建立
+        Stopwatch loadingShownClock;
+
+        // 檔名實際畫出來的高度（與 drawShineString 的換行、截斷規則一致），依檔名與卡片縮放快取
+        System.Collections.Concurrent.ConcurrentDictionary<(string, float), float> nameHeightCache;
+        Graphics nameMeasureGraphics;
+
+        float cardNameHeight(string name, float width)
+        {
+            if (string.IsNullOrEmpty(name) || width <= 0) return 0;
+            nameHeightCache ??= new System.Collections.Concurrent.ConcurrentDictionary<(string, float), float>();
+            var key = (name, scale);
+            if (nameHeightCache.TryGetValue(key, out float cached)) return cached;
+            nameMeasureGraphics ??= Graphics.FromImage(new Bitmap(1, 1));
+            float maxNameHeight = Math.Max(font2.GetHeight() * 1.2f, 40 * scale);
+            float h;
+            lock (nameMeasureGraphics)
+                h = nameMeasureGraphics.MeasureString(name, font2, (int)width).Height;
+            h = Math.Min(h, maxNameHeight);
+            nameHeightCache[key] = h;
+            return h;
+        }
         Action refreshPictureBox;
         DateTime drawTime = DateTime.Now;
         int drawTextCount = 10;
@@ -3825,6 +3905,9 @@ namespace QuickBrowser
         /// <summary>
         /// 中文輸入法（IME）開啟時，字母鍵會以 Keys.ProcessKey 送來；向 IME 取回實際按下的鍵
         /// </summary>
+        // 目前看圖模式開啟的圖片檔路徑（P 鍵用小畫家開啟）
+        string currentImagePath;
+
         static Keys realKeyCode(KeyEventArgs e)
         {
             if (e.KeyCode != Keys.ProcessKey) return e.KeyCode;
@@ -3838,6 +3921,18 @@ namespace QuickBrowser
             {
                 // 看圖時按空白鍵：以動畫回到 100% 並置中
                 resetImageZoom();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+            if (realKeyCode(e) == Keys.P && pictureBox2.Visible && pictureBox2.Image != null)
+            {
+                // 看圖時按 P：用小畫家開啟目前這張圖
+                if (File.Exists(currentImagePath))
+                {
+                    try { Process.Start(new ProcessStartInfo("mspaint.exe", "\"" + currentImagePath + "\"") { UseShellExecute = true }); }
+                    catch (Exception ex) { System.Media.SystemSounds.Hand.Play(); Text = ex.Message; }
+                }
                 e.Handled = true;
                 e.SuppressKeyPress = true;
                 return;
@@ -5434,7 +5529,14 @@ namespace QuickBrowser
             else if (selected.Count == 0)
             {
                 string nowPath = getNowPath();
-                if (string.IsNullOrEmpty(richTextBox7.Text))
+                if (backgroundLocked)
+                {
+                    // 鎖定中改欄位：改的是鎖定的背景；清空就等於解除鎖定
+                    qbSetting.lockedBackground = string.IsNullOrEmpty(richTextBox7.Text) ? null : richTextBox7.Text;
+                    InvalidateField(richTextBox7);
+                    FormMain.saveQBSetting();
+                }
+                else if (string.IsNullOrEmpty(richTextBox7.Text))
                 {
                     string a;
                     qbSetting.folderToBackgroundPath.TryRemove(nowPath, out a);
@@ -5753,7 +5855,19 @@ namespace QuickBrowser
         {
             comboBox1IndexThreadSafe = comboBox1.SelectedIndex;
             string path = getNowPath();
-            qbSetting.folderToImageShowType[path] = comboBox1.SelectedIndex;
+            if (qbSetting.lockedImageShowType != null)
+            {
+                // 鎖定中改選項：改的是鎖定的縮放方式，不寫進資料夾自己的設定
+                if (qbSetting.lockedImageShowType != comboBox1.SelectedIndex)
+                {
+                    qbSetting.lockedImageShowType = comboBox1.SelectedIndex;
+                    FormMain.saveQBSetting();
+                }
+            }
+            else
+            {
+                qbSetting.folderToImageShowType[path] = comboBox1.SelectedIndex;
+            }
             setGoodBitmapAndResetGraphic();
             setToDraw();
         }
@@ -5791,15 +5905,13 @@ namespace QuickBrowser
         {
             if (lockComboBox2) return;
             sortMode = comboBox2.SelectedIndex;
-            //waitAllDrawOK = true;
             resetCache();
             saveNowState();
-            addJobFree(() =>
-                {
-                    smartThreadPool.WaitForIdle();
-                    smartThreadPool2.WaitForIdle();
-                    go();
-                });
+            // 立刻進入 loading 畫面並重新載入；不必等縮圖池閒置（go 會讓舊工作依世代編號自行放棄）
+            waitAllDrawOK = true;
+            loadingDraw = true;
+            setToDraw();
+            go();
         }
 
         private void button10_Click(object sender, EventArgs e)
@@ -5811,7 +5923,7 @@ namespace QuickBrowser
                 {
                     if (path == computerPath)
                     {
-                        Process.Start("::{20d04fe0-3aea-1069-a2d8-08002b30309d}");
+                        Process.Start(new ProcessStartInfo("::{20d04fe0-3aea-1069-a2d8-08002b30309d}") { UseShellExecute = true });
                     }
                     else
                     {
@@ -5998,7 +6110,7 @@ namespace QuickBrowser
                 cardz.Append($"\"{card.fullPath}\" ");
             }
 
-            var p = Process.Start($"Bandizip.exe", $"bx -cp:{encode} -target:auto -o:\"{target}\" {cardz}");
+            var p = Process.Start(new ProcessStartInfo("Bandizip.exe", $"bx -cp:{encode} -target:auto -o:\"{target}\" {cardz}") { UseShellExecute = true });
         }
 
         private void button17_Click(object sender, EventArgs e)

@@ -79,6 +79,7 @@ namespace QuickBrowser
             AddField(richTextBox5, Theme.Glyph.Filter, new Padding(32, 9, 10, 9), field);
 
             setupCardSizeBar();
+            setupBackgroundLock();
 
             navigationCard = new Control[]
             {
@@ -105,6 +106,7 @@ namespace QuickBrowser
 
             var tip = Theme.CreateToolTip(components);
             tip.SetToolTip(richTextBox1, "目前路徑");
+            tip.SetToolTip(richTextBox7, "背景：圖片、影片檔路徑或網址（YouTube 也可以）。點左邊圖示可鎖定，所有資料夾都用這個背景");
             tip.SetToolTip(button3, "複製目前路徑");
             tip.SetToolTip(richTextBox2, "輸入編號跳轉　+ 開新視窗　- 刪除一位　* 搜尋");
             tip.SetToolTip(button1, "上一頁");
@@ -125,7 +127,7 @@ namespace QuickBrowser
             tip.SetToolTip(button8, "移動到目標資料夾");
             tip.SetToolTip(button13, "拖曳選取項目");
             tip.SetToolTip(richTextBox6, "目標資料夾");
-            tip.SetToolTip(comboBox1, "圖片顯示方式");
+            tip.SetToolTip(comboBox1, "背景縮放方式。點左邊圖示可鎖定，所有資料夾都用這個縮放方式");
             tip.SetToolTip(richTextBox7, "資料夾背景圖");
             tip.SetToolTip(button6, "只顯示資料夾 (Ctrl+J)");
             tip.SetToolTip(button10, "在檔案總管開啟");
@@ -462,12 +464,129 @@ namespace QuickBrowser
 
                 if (f.Glyph != null)
                 {
-                    // 一般高度置中；較高的多行欄位則對齊第一行
-                    float gh = outer.Height <= 48 ? outer.Height : 34;
-                    var gutter = new RectangleF(outer.X + 2, outer.Y, f.Pad.Left - 4, gh);
-                    Theme.DrawGlyph(g, f.Glyph, Theme.IconFont, focused ? Theme.Accent : Theme.TextMuted, gutter);
+                    var gutter = glyphGutter(f);
+                    string glyph = f.Glyph;
+                    Color glyphColor = focused ? Theme.Accent : Theme.TextMuted;
+                    if (isLockableField(f.Control))
+                    {
+                        // 背景、背景縮放欄位的圖示是鎖定開關：鎖定時顯示強調色鎖頭，滑鼠移上去變亮
+                        if (isFieldLocked(f.Control))
+                        {
+                            glyph = Theme.Glyph.Lock;
+                            glyphColor = Theme.Accent;
+                        }
+                        else if (lockHoverField == f.Control)
+                        {
+                            glyphColor = Theme.Text;
+                        }
+                    }
+                    Theme.DrawGlyph(g, glyph, Theme.IconFont, glyphColor, gutter);
                 }
             }
+        }
+
+        /// <summary>欄位左側圖示槽：一般高度置中；較高的多行欄位則對齊第一行。</summary>
+        static RectangleF glyphGutter(FieldSpec f)
+        {
+            var outer = f.Outer;
+            float gh = outer.Height <= 48 ? outer.Height : 34;
+            return new RectangleF(outer.X + 2, outer.Y, f.Pad.Left - 4, gh);
+        }
+
+        // ── 鎖定開關：點欄位左邊的圖示切換，之後每個資料夾都用同一個設定 ──
+        //   背景（richTextBox7）      → QBSetting.lockedBackground
+        //   背景縮放方式（comboBox1）→ QBSetting.lockedImageShowType
+        Control lockHoverField;
+
+        bool isLockableField(Control c) => c == richTextBox7 || c == comboBox1;
+
+        bool isFieldLocked(Control c) =>
+            c == richTextBox7 ? backgroundLocked : c == comboBox1 && imageShowTypeLocked;
+
+        /// <summary>滑鼠所在的鎖定開關（欄位左邊的圖示）；不在任何開關上回傳 null。</summary>
+        Control lockToggleAt(Point p)
+        {
+            foreach (var f in fields)
+                if (isLockableField(f.Control) && f.Control.Visible && glyphGutter(f).Contains(p))
+                    return f.Control;
+            return null;
+        }
+
+        void setupBackgroundLock()
+        {
+            MouseMove += (s, e) =>
+            {
+                var hover = lockToggleAt(e.Location);
+                if (hover == lockHoverField) return;
+                var old = lockHoverField;
+                lockHoverField = hover;
+                Cursor = hover != null ? Cursors.Hand : Cursors.Default;
+                if (old != null) InvalidateField(old);
+                if (hover != null) InvalidateField(hover);
+            };
+            MouseLeave += (s, e) =>
+            {
+                if (lockHoverField == null) return;
+                var old = lockHoverField;
+                lockHoverField = null;
+                Cursor = Cursors.Default;
+                InvalidateField(old);
+            };
+            MouseDown += (s, e) =>
+            {
+                if (e.Button != MouseButtons.Left) return;
+                var target = lockToggleAt(e.Location);
+                if (target == richTextBox7) toggleBackgroundLock();
+                else if (target == comboBox1) toggleImageShowTypeLock();
+            };
+        }
+
+        /// <summary>背景縮放方式已鎖定時，所有資料夾都用 QBSetting.lockedImageShowType。</summary>
+        bool imageShowTypeLocked => qbSetting?.lockedImageShowType != null;
+
+        /// <summary>鎖定：之後每個資料夾都用目前的背景縮放方式。解除：回到各資料夾自己的設定。</summary>
+        void toggleImageShowTypeLock()
+        {
+            string nowPath = getNowPath();
+            if (imageShowTypeLocked)
+            {
+                qbSetting.lockedImageShowType = null;
+                comboBox1.SelectedIndex = qbSetting.folderToImageShowType.TryGetValue(nowPath, out var own) ? own : 0;
+            }
+            else
+            {
+                qbSetting.lockedImageShowType = Math.Max(0, comboBox1.SelectedIndex);
+            }
+            FormMain.saveQBSetting();
+            InvalidateField(comboBox1);
+        }
+
+        /// <summary>鎖定：之後每個資料夾都用目前這個背景。解除：回到各資料夾自己的背景。</summary>
+        void toggleBackgroundLock()
+        {
+            string nowPath = getNowPath();
+            if (backgroundLocked)
+            {
+                qbSetting.lockedBackground = null;
+                // 欄位改回這個資料夾自己的背景
+                lockRichTextBox7 = true;
+                richTextBox7.Text = qbSetting.folderToBackgroundPath.TryGetValue(nowPath, out var own) ? own : "";
+                lockRichTextBox7 = false;
+            }
+            else
+            {
+                string current = richTextBox7.Text.Replace("\r", "").Replace("\n", "").Trim();
+                if (current.Length == 0)
+                {
+                    // 沒有背景可鎖
+                    System.Media.SystemSounds.Beep.Play();
+                    return;
+                }
+                qbSetting.lockedBackground = current;
+            }
+            FormMain.saveQBSetting();
+            updateFolderBackground(nowPath);
+            InvalidateField(richTextBox7);
         }
 
         static Rectangle Inflate(Rectangle r, int by)

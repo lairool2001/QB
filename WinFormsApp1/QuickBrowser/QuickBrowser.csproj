@@ -12,6 +12,8 @@
     <SelfContained>false</SelfContained>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>FileCardGlow (2).ico</ApplicationIcon>
+    <!-- 宣告支援 Windows 8 以上：子視窗才能使用 WS_EX_LAYERED（網頁背景用） -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 沿用 Properties\AssemblyInfo.cs -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>disable</Nullable>
@@ -42,6 +44,7 @@
     <PackageReference Include="System.Speech" Version="8.0.0" />
     <PackageReference Include="unvell.D2DLib-x64" Version="1.4.1" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
   </ItemGroup>
 
   <ItemGroup>
